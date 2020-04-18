@@ -2,7 +2,27 @@
 <head>
 <title>getAnAudioInput</title>
 </head>
-<body>
+<body onload='page_load();'>
 Get and audio input and share it tothe host frame.
+<div id="inputData">
+<input type='text' id='messageSrc'>
+<button onclick='sendMessage();'>send</button>
+</div>
+<div id="messageDisplay">
+</div>
+<script type='text/javascript'>
+function page_load(){
+    window.addEventListener('message', receiveMessage, false);
+	messageDiv = document.getElementById('messageDisplay');
+}
+function receiveMessage(event) {
+	console.log(event);
+	messageDiv.innerHTML +=  event.data + "<br>";
+}
+function sendMessage(){
+	var data = document.getElementById('messageSrc').value;
+	window.parent.postMessage(data);
+}
+</script>
 </body>
 </html>

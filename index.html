@@ -1,8 +1,23 @@
 <html>
 <head>
 <title>My Jam Hub</title>
+<script type='text/javascript'>
+function addNewFrame(){
+}
+
+function page_load(){
+    window.addEventListener('message', receiveMessage, false);
+	messageDiv = document.getElementById('messageDisplay');
+}
+
+function receiveMessage(event) {
+	console.log(event);
+	messageDiv.innerHTML +=  event.data + "<br>";
+	event.source.postMessage('acknowledged:'+event.data);
+}
+</script>
 </head>
-<body>
+<body onload='page_load();'>
 <h1>My Jam Hub</h1>
 <p>Allow multiple local audio inputs to me mixed for local playback
 and to shared with others via WEBRtc.
@@ -10,14 +25,10 @@ and to shared with others via WEBRtc.
 <p>
 WebRtc tech used to share audio streams with Peers
 </p>
-
+<div id="messageDisplay">
+</div>
 <iframe src='getAudioInput.html' style='width:100%;height:200px' allow="camera;microphone"></iframe>
 <button onclick='addNEwFrame();'>Add</button>
-<script type='text/javascript'>
-function addNewFrame(){
-}
-
-</script>
 
 
 

@@ -7,10 +7,20 @@ Get and audio input and share it tothe host frame.
 <div id="inputData">
 <input type='text' id='messageSrc'>
 <button onclick='sendMessage();'>send</button>
+<button onclick='getAudioMedia();'>Open Media</button>
 </div>
 <div id="messageDisplay">
 </div>
 <script type='text/javascript'>
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+var audioContext = new AudioContext();
+var constraints = 
+{
+  audio: {
+      optional: [{ echoCancellation: false }]
+  }
+};
+
 function page_load(){
     window.addEventListener('message', receiveMessage, false);
 	messageDiv = document.getElementById('messageDisplay');
@@ -23,6 +33,24 @@ function sendMessage(){
 	var data = document.getElementById('messageSrc').value;
 	window.parent.postMessage(data);
 }
+
+function getAudioMedia(){
+    if (!navigator.getUserMedia)
+        navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+    if (!navigator.getUserMedia)
+        return(alert("Error: getUserMedia not supported!"));
+
+    navigator.getUserMedia(constraints, gotStream, function(e) {
+            alert('Error getting audio');
+            console.log(e);
+        });
+}
+
+function gotStream(stream) {
+    var input = audioContext.createMediaStreamSource(stream);
+}
+
 </script>
 </body>
 </html>

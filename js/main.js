@@ -18,16 +18,23 @@ limitations under the License.
 
 var startButton = document.getElementById('startButton');
 var callButton = document.getElementById('callButton');
+var listenButton = document.getElementById('listenButton');
+var answerButton = document.getElementById('answerButton');
 var hangupButton = document.getElementById('hangupButton');
 callButton.disabled = true;
+answerButton.disabled = true;
 hangupButton.disabled = true;
 startButton.onclick = start;
+listenButton.onclick = startListening;
 callButton.onclick = call;
+answerButton.onclick = answerCall;
 hangupButton.onclick = hangup;
 
 var startTime;
-var localVideo = document.getElementById('localVideo');
-var remoteVideo = document.getElementById('remoteVideo');
+if( ! isHost){
+	var localVideo = document.getElementById('localVideo');
+	var remoteVideo = parent.document.getElementById('remoteVideo');
+
 
 localVideo.addEventListener('loadedmetadata', function() {
   trace('Local video videoWidth: ' + this.videoWidth +
@@ -50,6 +57,7 @@ remoteVideo.onresize = function() {
     startTime = null;
   }
 };
+}
 
 var localStream;
 var pc1;
@@ -59,8 +67,52 @@ var offerOptions = {
   offerToReceiveVideo: 1
 };
 
+function startListening(){
+}
+
+function answerCall(){
+  answerButton.disabled = true;
+  hangupButton.disabled = false;
+  trace('Start listening');
+  startTime = window.performance.now();
+  var servers = null;
+  pc2 = new RTCPeerConnection(servers);
+  trace('Created remote peer connection object pc2');
+  pc2.onicecandidate = function(e) {
+    onIceCandidate(pc2, e);
+  };
+  pc2.oniceconnectionstatechange = function(e) {
+    onIceStateChange(pc2, e);
+  };
+  pc2.onaddstream = gotRemoteStream;
+
+
+  trace('pc1 createOffer start');
+  pc1.createOffer(
+    offerOptions
+  ).then(
+    onCreateOfferSuccess,
+    onCreateSessionDescriptionError
+  );
+  trace('pc2 setRemoteDescription start');
+  pc2.setRemoteDescription(desc).then(
+    function() {
+      onSetRemoteSuccess(pc2);
+    },
+    onSetSessionDescriptionError
+  );
+  trace('pc2 createAnswer start');
+  // Since the 'remote' side has no media stream we need
+  // to pass in the right constraints in order for it to
+  // accept the incoming offer of audio and video.
+  pc2.createAnswer().then(
+    onCreateAnswerSuccess,
+    onCreateSessionDescriptionError
+  );
+}
+
 function getName(pc) {
-  return (pc === pc1) ? 'pc1' : 'pc2';
+  return (pc === pc1) ? 'pcIframe' : 'pcParentFrame';
 }
 
 function getOtherPc(pc) {

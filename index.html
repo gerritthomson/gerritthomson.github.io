@@ -3,6 +3,7 @@
 <head>
 <title>My Jam Hub</title>
 <script type='text/javascript'>
+var isHost = true;
 function addNewFrame(){
 }
 
@@ -35,6 +36,13 @@ WebRtc tech used to share audio streams with Peers
       </div>
     </div>
     <video id="remoteVideo" autoplay playsinline></video>
+    <div>
+      <button id="listenButton">Listen</button>
+      <button id="answerButton">Answer</button>
+      <button id="hangupButton">Hang Up</button>
+      <button id="callButton" style='display:none;'>Call</button>
+      <button id="startButton"  style='display:none;'>Start</button>
+</div>
 
 <iframe src='getAudioInput.html' style='width:100%;height:600px' allow="camera;microphone"></iframe>
 <button onclick='addNEwFrame();'>Add</button>

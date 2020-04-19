@@ -11,6 +11,9 @@ Get and audio input and share it tothe host frame.
 <button onclick='getAudioMedia();'>Open Media</button>
 </div>
     <div>
+	      <button id="listenButton" style='display:none;'>Listen</button>
+      <button id="answerButton" style='display:none;'>Answer</button>
+
       <button id="startButton">Start</button>
       <button id="callButton">Call</button>
       <button id="hangupButton">Hang Up</button>
@@ -26,6 +29,7 @@ Get and audio input and share it tothe host frame.
 <div id="messageDisplay">
 </div>
 <script type='text/javascript'>
+var isHost = false;
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
 var audioContext = new AudioContext();
 var constraints = 

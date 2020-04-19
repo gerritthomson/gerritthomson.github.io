@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 <title>getAnAudioInput</title>
@@ -9,6 +10,19 @@ Get and audio input and share it tothe host frame.
 <button onclick='sendMessage();'>send</button>
 <button onclick='getAudioMedia();'>Open Media</button>
 </div>
+    <div>
+      <button id="startButton">Start</button>
+      <button id="callButton">Call</button>
+      <button id="hangupButton">Hang Up</button>
+    </div>
+<div id="sendReceive">
+      <div id="send">
+        <h2>Send</h2>
+        <textarea id="dataChannelSend" disabled placeholder="Press Start, enter some text, then press Send."></textarea>
+      </div>
+    </div>
+    <video id="localVideo" autoplay muted playsinline></video>
+
 <div id="messageDisplay">
 </div>
 <script type='text/javascript'>
@@ -52,5 +66,7 @@ function gotStream(stream) {
 }
 
 </script>
+    <script src="js/main.js"></script>
+
 </body>
 </html>

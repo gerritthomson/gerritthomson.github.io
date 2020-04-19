@@ -49,7 +49,7 @@ remoteVideo.onresize = function() {
     startTime = null;
   }
 };
-}
+
 
 var localStream;
 var pc1;
@@ -80,6 +80,23 @@ function answerCall(caller, desc){
   pc2.onaddstream = gotRemoteStream;
 
   trace('pc2 setRemoteDescription start');
+  pc2.setRemoteDescription(desc).then(
+    function() {
+      onSetRemoteSuccess(pc2);
+    },
+    onSetSessionDescriptionError
+  );
+  trace('pc2 createAnswer start');
+  // Since the 'remote' side has no media stream we need
+  // to pass in the right constraints in order for it to
+  // accept the incoming offer of audio and video.
+  pc2.createAnswer().then(
+    onCreateAnswerSuccess,
+    onCreateSessionDescriptionError
+  );
+}
+
+function setRemoteDescription(desc, source){
   pc2.setRemoteDescription(desc).then(
     function() {
       onSetRemoteSuccess(pc2);
@@ -224,9 +241,12 @@ function onCreateAnswerSuccess(desc) {
     },
     onSetSessionDescriptionError
   );
+  var message = {};
+  message.type='answer';
+  message.data = JSON.stringify(desc);
   
   // send answer to caller
-  caller.postMessage(desc);
+  caller.postMessage(message,'*');
 }
 
 function onIceCandidate(pc, event) {

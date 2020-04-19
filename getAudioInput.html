@@ -46,6 +46,13 @@ function page_load(){
 function receiveMessage(event) {
 	console.log(event);
 	messageDiv.innerHTML +=  event.data + "<br>";
+		var  message = event.data;
+	if(message.type == 'answer'){
+		caller = event.source;
+		var desc = JSON.parse(message.data);
+		onCreateAnswerSuccess(desc);
+		return;
+	}
 }
 function sendMessage(){
 	var data = document.getElementById('messageSrc').value;

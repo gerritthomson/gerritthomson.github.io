@@ -31,9 +31,8 @@ answerButton.onclick = answerCall;
 hangupButton.onclick = hangup;
 
 var startTime;
-if( ! isHost){
 	var localVideo = document.getElementById('localVideo');
-	var remoteVideo = parent.document.getElementById('remoteVideo');
+//	var remoteVideo = parent.document.getElementById('remoteVideo');
 
 
 localVideo.addEventListener('loadedmetadata', function() {
@@ -41,23 +40,22 @@ localVideo.addEventListener('loadedmetadata', function() {
     'px,  videoHeight: ' + this.videoHeight + 'px');
 });
 
-remoteVideo.addEventListener('loadedmetadata', function() {
-  trace('Remote video videoWidth: ' + this.videoWidth +
-    'px,  videoHeight: ' + this.videoHeight + 'px');
-});
+//remoteVideo.addEventListener('loadedmetadata', function() {
+//  trace('Remote video videoWidth: ' + this.videoWidth +
+//    'px,  videoHeight: ' + this.videoHeight + 'px');
+//});
 
-remoteVideo.onresize = function() {
-  trace('Remote video size changed to ' +
-    remoteVideo.videoWidth + 'x' + remoteVideo.videoHeight);
+//remoteVideo.onresize = function() {
+//  trace('Remote video size changed to ' +
+//    remoteVideo.videoWidth + 'x' + remoteVideo.videoHeight);
   // We'll use the first onsize callback as an indication that video has started
   // playing out.
-  if (startTime) {
-    var elapsedTime = window.performance.now() - startTime;
-    trace('Setup time: ' + elapsedTime.toFixed(3) + 'ms');
-    startTime = null;
-  }
-};
-}
+//  if (startTime) {
+//    var elapsedTime = window.performance.now() - startTime;
+//    trace('Setup time: ' + elapsedTime.toFixed(3) + 'ms');
+//    startTime = null;
+//  }
+//};
 
 var localStream;
 var pc1;
@@ -196,6 +194,11 @@ function onCreateOfferSuccess(desc) {
     },
     onSetSessionDescriptionError
   );
+  var message={};
+  message.type='offer';
+  message.offer = JSON.stringify(desc);
+  window.parent.postMessage(message,'*');
+  return;
   trace('pc2 setRemoteDescription start');
   pc2.setRemoteDescription(desc).then(
     function() {
@@ -226,19 +229,19 @@ function onSetSessionDescriptionError(error) {
 }
 
 function gotRemoteStream(e) {
-  remoteVideo.srcObject = e.stream;
+//  remoteVideo.srcObject = e.stream;
   trace('pc2 received remote stream');
 }
 
 function onCreateAnswerSuccess(desc) {
   trace('Answer from pc2:\n' + desc.sdp);
   trace('pc2 setLocalDescription start');
-  pc2.setLocalDescription(desc).then(
-    function() {
-      onSetLocalSuccess(pc2);
-    },
-    onSetSessionDescriptionError
-  );
+//  pc2.setLocalDescription(desc).then(
+//    function() {
+//      onSetLocalSuccess(pc2);
+//    },
+//    onSetSessionDescriptionError
+//  );
   trace('pc1 setRemoteDescription start');
   pc1.setRemoteDescription(desc).then(
     function() {

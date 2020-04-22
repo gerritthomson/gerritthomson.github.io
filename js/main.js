@@ -122,7 +122,7 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   localStream = stream;
   callButton.disabled = false;
-  parent.addAudioStream( stream );
+//  parent.addAudioStream( stream );
   // create a gain node (to change audio volume)
   var gainNode = audioContext.createGain();
 // default is 1 (no change); less than 1 means audio is attenuated

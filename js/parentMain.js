@@ -297,6 +297,11 @@ function trace(arg) {
 var streams = new Array();
 let audioContext;
   audioContext = new AudioContext();
+var gainNode = audioContext.createGain();
+// default is 1 (no change); less than 1 means audio is attenuated
+// and vice versa
+gainNode.gain.value = 1.5;
+
 function addAudioStream( stream ){
   streams.push(stream);
   const mediaStreamSource = audioContext.createMediaStreamSource(stream);

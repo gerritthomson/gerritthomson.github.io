@@ -122,6 +122,7 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   localStream = stream;
   callButton.disabled = false;
+  parent.addAudioStream( stream );
 }
 
 function start() {

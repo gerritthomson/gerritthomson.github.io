@@ -295,6 +295,10 @@ function trace(arg) {
 }
 
 var streams = new Array();
+let audioContext;
+  audioContext = new AudioContext();
 function addAudioStream( stream ){
   streams.push(stream);
+  const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+  mediaStreamSource.connect(audioContext.destination);
 }

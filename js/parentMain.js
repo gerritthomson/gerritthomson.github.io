@@ -60,7 +60,7 @@ var offerOptions = {
 };
 
 function startListening(){
-  audioContext = new AudioContext();
+  audioContext = new AudioContext({sameplRate: 48000});
 
 }
 

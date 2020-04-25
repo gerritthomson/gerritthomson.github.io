@@ -60,6 +60,8 @@ var offerOptions = {
 };
 
 function startListening(){
+  audioContext = new AudioContext();
+
 }
 
 // answer call happens afeter offer is received via postMessage
@@ -296,14 +298,18 @@ function trace(arg) {
 
 var streams = new Array();
 let audioContext;
-  audioContext = new AudioContext();
-var gainNode = audioContext.createGain();
+//var gainNode = audioContext.createGain();
 // default is 1 (no change); less than 1 means audio is attenuated
 // and vice versa
-gainNode.gain.value = 1.5;
+//gainNode.gain.value = 1.5;
 
 function addAudioStream( stream ){
   streams.push(stream);
   const mediaStreamSource = audioContext.createMediaStreamSource(stream);
   mediaStreamSource.connect(audioContext.destination);
+}
+
+function getAudioContextVar(){
+
+  return audioContext;
 }

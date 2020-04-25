@@ -122,18 +122,20 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   localStream = stream;
   callButton.disabled = false;
-//  parent.addAudioStream( stream );
+  parent.addAudioStream( stream );
+  return;
   // create a gain node (to change audio volume)
-  var gainNode = parent.audioContext.createGain();
+  var localContext = parent.getAudioContextVar();
+  var gainNode = localContext.createGain();
 // default is 1 (no change); less than 1 means audio is attenuated
 // and vice versa
-  gainNode.gain.value = 1.5;
+//  gainNode.gain.value = 1.5;
 
     // Create an AudioNode from the stream
-    const mediaStreamSource = parent.audioContext.createMediaStreamSource(stream);
+    const mediaStreamSource = localContext.createMediaStreamSource(stream);
     mediaStreamSource.connect(gainNode);
     // connect the gain node to the destination (i.e. play the sound)
-    gainNode.connect(parent.audioContext.destination);
+    gainNode.connect(localContext.destination);
 
 }
 

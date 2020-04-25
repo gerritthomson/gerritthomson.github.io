@@ -122,8 +122,8 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   localStream = stream;
   callButton.disabled = false;
-  parent.addAudioStream( stream );
-  return;
+//  parent.addAudioStream( stream );
+//  return;
   // create a gain node (to change audio volume)
   var localContext = parent.getAudioContextVar();
   var gainNode = localContext.createGain();

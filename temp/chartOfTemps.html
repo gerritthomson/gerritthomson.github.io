@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Charts of temps</title>
+    <script type="text/javascript" src="chartist.js"></script>
+    <link rel="stylesheet" href="chartist.css">
+</head>
+<body>
+
+<h1>Home Temps</h1>
+<script type="text/javascript">
+    var numToGet = 10;
+	var grouping = 1;
+    var srcHref = "https://us-central1-digital-thermos-229002.cloudfunctions.net/getLastLog?dev=ws1&num=";
+    var insideTemps = [];
+    var outsideTemps  = [];
+    var times = [];
+
+
+        fetch(srcHref + numToGet)
+            .then(response =>{
+                console.log(response);
+                return response.json();
+            } )
+            .then(data => {
+                console.log(data);
+                var itemCount = 0;
+                var sumInside = 0;
+                var sumOutside = 0;
+                data = data.filter(function(item){
+                    return (item.deviceId == 'ws1');
+                });
+                data.forEach(function(item,index){
+                    itemCount ++;
+                    sumInside += parseFloat(item.insideTemp);
+                    sumOutside += parseFloat(item.temperature);
+                    if ((itemCount % grouping ) == 0){
+                        times.push(item.readingDateTime.split('::')[1].substr(0,5));
+                        insideTemps.push( sumInside / grouping);
+                        outsideTemps.push( sumOutside / grouping);
+                        sumInside = 0;
+                        sumOutside = 0;
+//                        itemCount = 0;
+                    }
+//                    times.push(item.readingDateTime.split('::')[1].substr(0,5));
+//                    insideTemps.push(item.insideTemp);
+//                    outsideTemps.push(item.temperature);
+                });
+                times.reverse();
+                insideTemps.reverse();
+                outsideTemps.reverse();
+                new Chartist.Line('.ct-chart', {
+                    labels: times,
+                    series: [
+                        insideTemps,
+                        outsideTemps
+                    ]
+                }, {
+                    fullWidth: true,
+                    chartPadding: {
+                        right: 40
+                    }
+                });
+            });
+
+</script>
+
+<div class="ct-chart" style="height:600px;"></div>
+</body>
+</html>

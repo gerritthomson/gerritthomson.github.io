@@ -136,6 +136,8 @@ function gotStream(stream) {
     mediaStreamSource.connect(gainNode);
     // connect the gain node to the destination (i.e. play the sound)
     gainNode.connect(localContext.destination);
+  var meterNode = webAudioPeakMeter.createMeterNode(gainNode, localContext);
+  webAudioPeakMeter.createMeter(myMeterElement, meterNode, {});
 
 }
 

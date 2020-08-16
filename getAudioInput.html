@@ -2,6 +2,12 @@
 <html>
 <head>
 <title>getAnAudioInput</title>
+    <style type="text/css">
+        #my-peak-meterA {
+            transform: rotate(90deg);
+            transform: translateX(400px);
+        }
+    </style>
 </head>
 <body onload='page_load();'>
 Get and audio input and share it tothe host frame.
@@ -28,6 +34,11 @@ Get and audio input and share it tothe host frame.
 
 <div id="messageDisplay">
 </div>
+<div id="my-peak-meter" style="width: 5em; height: 20em; margin: 1em 0;">
+</div>
+
+
+
 <script type='text/javascript'>
 var isHost = false;
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -77,7 +88,24 @@ function gotStream(stream) {
 }
 
 </script>
+
+<script>
+    var myMeterElement = document.getElementById('my-peak-meter');
+//    var myAudio = document.getElementById('my-audio');
+//    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+//    var sourceNode = audioCtx.createMediaElementSource(myAudio);
+//    sourceNode.connect(audioCtx.destination);
+//    var meterNode = webAudioPeakMeter.createMeterNode(sourceNode, audioCtx);
+//    webAudioPeakMeter.createMeter(myMeterElement, meterNode, {});
+//     myAudio.addEventListener('play', function() {
+//         audioCtx.resume();
+//     });
+</script>
+
+
+
     <script src="js/main.js"></script>
+<script src="js/peakMeter.js"></script>
 
 </body>
 </html>

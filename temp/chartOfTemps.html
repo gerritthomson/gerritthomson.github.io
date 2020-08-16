@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Charts of temps</title>
+    <script type="text/javascript" src="idb.js"></script>
     <script type="text/javascript" src="chartist.js"></script>
+    <script type="text/javascript" src="main.js"></script>
     <link rel="stylesheet" href="chartist.css">
 </head>
 <body>
 
 <h1>Home Temps</h1>
 <script type="text/javascript">
+function getAndStoreData(){
     var numToGet = 10;
-	var grouping = 1;
     var srcHref = "https://us-central1-digital-thermos-229002.cloudfunctions.net/getLastLog?dev=ws1&num=";
-    var insideTemps = [];
-    var outsideTemps  = [];
-    var times = [];
 
 
         fetch(srcHref + numToGet)
@@ -23,8 +22,22 @@
                 console.log(response);
                 return response.json();
             } )
+			.then(data => {
+                idbApp.addTemps(data);
+			});
+        setTimeout(getAndStoreData, 20000);
+	};
+function showData(){
+	var grouping = 1;
+    var insideTemps = [];
+    var outsideTemps  = [];
+    var times = [];
+        idbApp.getAllTemps()
             .then(data => {
+                data = data.slice( data.length - 30);
                 console.log(data);
+
+                grouping = Math.floor(data.length / 10);
                 var itemCount = 0;
                 var sumInside = 0;
                 var sumOutside = 0;
@@ -47,9 +60,9 @@
 //                    insideTemps.push(item.insideTemp);
 //                    outsideTemps.push(item.temperature);
                 });
-                times.reverse();
-                insideTemps.reverse();
-                outsideTemps.reverse();
+//                times.reverse();
+//                insideTemps.reverse();
+//                outsideTemps.reverse();
                 new Chartist.Line('.ct-chart', {
                     labels: times,
                     series: [
@@ -63,9 +76,11 @@
                     }
                 });
             });
-
+        setTimeout(showData, 20000);
+};
+showData();
+getAndStoreData();
 </script>
-
 <div class="ct-chart" style="height:600px;"></div>
 </body>
 </html>

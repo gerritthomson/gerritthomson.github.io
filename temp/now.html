@@ -22,7 +22,7 @@
             } )
             .then(data => {
                 idbApp.addTemps(data);
-                return data.pop();
+                return data.shift();
             })
         .then(data => {
             idbApp.setOption('latest', data);

@@ -56,15 +56,15 @@ var idbApp = (function() {
       var tx = db.transaction('options', 'readwrite');
       var store = tx.objectStore('options');
       var option = { key:key, value:value };
-      return stire.put(option);
+      return store.put(option);
     });
   }
   function getOption(key) {
     return dbPromise.then(function(db) {
       var tx = db.transaction('options', 'readonly');
       var store = tx.objectStore('options');
-      var index = store.index('key');
-      return index.get(key);
+//      var index = store.index('key');
+      return store.get(key);
     });
   }
 
@@ -153,6 +153,15 @@ var idbApp = (function() {
     return dbPromise.then(function(db) {
       var tx = db.transaction('houseTemps', 'readonly');
       var store = tx.objectStore('houseTemps');
+      return store.getAll();
+    });
+  }
+  function getLastTemp(element) {
+    return dbPromise.then(function(db) {
+      var tx = db.transaction('houseTemps', 'readonly');
+      var store = tx.objectStore('houseTemps');
+      var index = store.index('');
+
       return store.getAll();
     });
   }

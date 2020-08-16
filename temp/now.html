@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script type="text/javascript" src="idb.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <meta charset="UTF-8">
+    <title>Now</title>
+</head>
+<body>
+<h1 id="now"></h1>
+<p id="asAt"></p>
+<script type="text/javascript">
+    function getAndStoreData(){
+        var numToGet = 10;
+        var srcHref = "https://us-central1-digital-thermos-229002.cloudfunctions.net/getLastLog?dev=ws1&num=";
+
+
+        fetch(srcHref + numToGet)
+            .then(response =>{
+                console.log(response);
+                return response.json();
+            } )
+            .then(data => {
+                idbApp.addTemps(data);
+                return data.pop();
+            })
+        .then(data => {
+            idbApp.setOption('latest', data);
+        });
+        setTimeout(getAndStoreData, 20000);
+    };
+
+    function showLatest(){
+        idbApp.getOption('latest')
+        .then(data =>{
+            document.getElementById('now').innerText = data.value.insideTemp;
+            var time = data.value.readingDateTime.split('::')[1].substr(0,5);
+            var datestr = data.value.readingDateTime.split('::')[0];
+            var dateData = datestr.split('/');
+            var newDateStr = dateData[1] + '/' + dateData[0] + '/' + dateData[2] + ' ' + time;
+            document.getElementById('asAt').innerText = newDateStr;
+        });
+        setTimeout(showLatest, 20000);
+    }
+    showLatest();
+    getAndStoreData();
+</script>
+</body>
+</html>

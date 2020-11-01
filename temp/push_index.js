@@ -20,12 +20,25 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
+function saveSubscription(sub){
+    localStorage.setItem('subscription', JSON.stringify(sub));
+}
+function getSubscription(){
+    let substr = localStorage.getItem('subscription');
+    if( substr == null){
+        return null;
+    }
+    sub = JSON.parse(substr);
+    return sub;
+}
+
 navigator.serviceWorker.ready
     .then(function (registration) {
         return registration.pushManager.getSubscription()
             .then(async function (subscription) {
                 if (subscription) {
-                    console.log('got subscription!', subscription)
+                    console.log('got subscription!', subscription);
+                    saveSubscription(subscription);
                     return subscription;
                 }
                 const response = await fetch('https://us-central1-digital-thermos-229002.cloudfunctions.net/tempPublicKey');

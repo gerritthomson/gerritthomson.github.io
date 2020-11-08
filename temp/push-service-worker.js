@@ -6,8 +6,9 @@ self.addEventListener('push', function (event) {
         notice += ' Inside:' + reading.insideTemp;
     }
     event.waitUntil(
-        self.registration.showNotification('ServiceWorker Cookbook', {
+        self.registration.showNotification('Weather on Pebble', {
             body: notice,
+            tag: reading.deviceId
         })
     );
 });

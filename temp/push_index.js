@@ -89,4 +89,17 @@ navigator.serviceWorker.addEventListener('message', function handler (event) {
         return;
     }
     console.log(event.data);
+    data = json.parse(event.data);
+    switch(data.deviceId){
+        case 'k1' :
+            document.getElementById('kettle').innerHTML = event.data;
+            break;
+        case 'th16-1':
+            document.getElementById('bedroom').innerHTML = event.data;
+            break;
+        case 'ws1':
+            document.getElementById('ws1').innerHTML = event.data;
+            break;
+    }
+
 });

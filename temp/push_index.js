@@ -90,15 +90,19 @@ navigator.serviceWorker.addEventListener('message', function handler (event) {
     }
     console.log(event.data);
     data = event.data;
+    message = 'data:';
+    for(id in data){
+        message += id +':'+ data[id] + "<br>";
+    }
     switch(data.deviceId){
         case 'kt1' :
-            document.getElementById('kettle').innerHTML = event.data;
+            document.getElementById('kettle').innerHTML = message;
             break;
         case 'th16-1':
-            document.getElementById('bedroom').innerHTML = event.data;
+            document.getElementById('bedroom').innerHTML = message;
             break;
         case 'ws1':
-            document.getElementById('lounge').innerHTML = event.data;
+            document.getElementById('lounge').innerHTML = message;
             break;
     }
 

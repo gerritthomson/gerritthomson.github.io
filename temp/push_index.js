@@ -24,7 +24,7 @@ function saveSubscription(sub){
     localStorage.setItem('subscription', JSON.stringify(sub));
 }
 function getSubscription(){
-    let substr = localStorage.getItem('subscription');
+    substr = localStorage.getItem('subscription');
     if( substr == null){
         return null;
     }
@@ -65,35 +65,28 @@ navigator.serviceWorker.ready
         }),
     });
 
-    document.getElementById('doIt').onclick = function () {
-        const payload = 'Hola!'
-        const delay = '5'
-        const ttl = '5'
-        fetch('./sendNotification', {
-            method: 'post',
-            headers: {
-                'Content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                subscription: subscription,
-                payload: payload,
-                delay: delay,
-                ttl: ttl,
-            }),
+    document.getElementById('unsub').onclick = function () {
+        var sub = getSubscription();
+        if(sub != null){
+            sub.unSubscribe().then(function(result){
+                console.log('Unsubscribed');
+            });
+        }
+    };
+
+    document.getElementById('perm').onclick = function () {
+        Notification.requestPermission(function(status) {
+            console.log('Notification permission status:', status);
         });
     };
 
-    document.getElementById('sendToAll').onclick = function () {
-        fetch('./sendToAll', {
-            method: 'post',
-            headers: {
-                'Content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                payload: 'SEND TEXT TO ALL',
-                delay: 0,
-            }),
-        });
-    };
+});
 
+worker = navigator.serviceWorker.controller;
+
+navigator.serviceWorker.addEventListener('message', function handler (event) {
+    if (event.source !== worker) {
+        return;
+    }
+    console.log(event.data);
 });

@@ -3,6 +3,7 @@
 <head>
     <script type="text/javascript" src="idb.js"></script>
     <script type="text/javascript" src="main.js"></script>
+    <script type="text/javascript" src="uicommon.js"></script>
     <meta charset="UTF-8">
     <title>Now</title>
 </head>
@@ -27,23 +28,24 @@
         .then(data => {
             idbApp.setOption('latest', data);
         });
-        setTimeout(getAndStoreData, 20000);
-    };
+        setTimeout(getAndStoreData, 200000);
+    }
 
     function showLatest(){
         idbApp.getOption('latest')
         .then(data =>{
-            document.getElementById('now').innerText = data.value.insideTemp;
-            var time = data.value.readingDateTime.split('::')[1].substr(0,5);
-            var datestr = data.value.readingDateTime.split('::')[0];
-            var dateData = datestr.split('/');
-            var newDateStr = dateData[1] + '/' + dateData[0] + '/' + dateData[2] + ' ' + time;
+            document.getElementById('now').innerText = 'In:'+data.value.insideTemp + ' Out:'+ data.value.temperature;
+            let time = data.value.readingDateTime.split('::')[1].substr(0,5);
+            let datestr = data.value.readingDateTime.split('::')[0];
+            let dateData = datestr.split('/');
+            let newDateStr = dateData[1] + '/' + dateData[0] + '/' + dateData[2] + ' ' + time;
             document.getElementById('asAt').innerText = newDateStr;
         });
         setTimeout(showLatest, 20000);
     }
+    idbApp.open();
     showLatest();
-    getAndStoreData();
+//    getAndStoreData();
 </script>
 </body>
 </html>

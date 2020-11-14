@@ -15,24 +15,28 @@ limitations under the License.
 */
 var idbApp = (function() {
   'use strict';
+  let dbPromise;
 
-  if (!('indexedDB' in window)) {
+  if (!(self.indexedDB)) {
     console.log('This browser doesn\'t support IndexedDB');
     return;
   }
 
-  var dbPromise = idb.open('weather', 2, function(upgradeDb) {
-    switch (upgradeDb.oldVersion) {
-      case 0:
-        // a placeholder case so that the switch block will
-        // execute when the database is first created
-        // (oldVersion is 0)
-      case 1:
-        console.log('Creating the temperatures object store');
-        upgradeDb.createObjectStore('houseTemps',{keyPath: 'createdAt'});
-        upgradeDb.createObjectStore('options',{keyPath: 'key'});
-    }
-  });
+  function open()
+  {
+    dbPromise = idb.open('weather', 2, function (upgradeDb) {
+      switch (upgradeDb.oldVersion) {
+        case 0:
+          // a placeholder case so that the switch block will
+          // execute when the database is first created
+          // (oldVersion is 0)
+        case 1:
+          console.log('Creating the temperatures object store');
+          upgradeDb.createObjectStore('houseTemps', {keyPath: 'createdAt'});
+          upgradeDb.createObjectStore('options', {keyPath: 'key'});
+      }
+    });
+  }
 
   function addTemps(temps) {
     dbPromise.then(function(db) {
@@ -167,6 +171,7 @@ var idbApp = (function() {
   }
 
   return {
+    open: (open),
     dbPromise: (dbPromise),
     addTemps: (addTemps),
     getAllTemps: (getAllTemps),

@@ -98,7 +98,7 @@ navigator.serviceWorker.addEventListener('message', function handler (event) {
             document.getElementById('bedroom').innerHTML = event.data;
             break;
         case 'ws1':
-            document.getElementById('ws1').innerHTML = event.data;
+            document.getElementById('lounge').innerHTML = event.data;
             break;
     }
 

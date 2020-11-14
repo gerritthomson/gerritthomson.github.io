@@ -91,7 +91,7 @@ navigator.serviceWorker.addEventListener('message', function handler (event) {
     console.log(event.data);
     data = event.data;
     switch(data.deviceId){
-        case 'k1' :
+        case 'kt1' :
             document.getElementById('kettle').innerHTML = event.data;
             break;
         case 'th16-1':

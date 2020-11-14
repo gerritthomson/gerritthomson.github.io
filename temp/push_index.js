@@ -90,18 +90,24 @@ navigator.serviceWorker.addEventListener('message', function handler (event) {
     }
     console.log(event.data);
     data = event.data;
-    message = 'data:';
-    for(id in data){
-        message += id +':'+ data[id] + "<br>";
-    }
     switch(data.deviceId){
         case 'kt1' :
+            message = 'Temperature:' + data.temperature+'</br>';
+            message += 'Reading time:' + data.readingDateTime+"</br>";
             document.getElementById('kettle').innerHTML = message;
             break;
         case 'th16-1':
+            message = 'Temperature:' + data.temperature+'</br>';
+            message += 'Humidity:' + data.humidity+'</br>';
+            message += 'Reading time:' + data.readingDateTime+"</br>";
             document.getElementById('bedroom').innerHTML = message;
             break;
         case 'ws1':
+            message = 'Outdoor Temperature:' + data.temperature+'</br>';
+            message += 'Outdoor Humidity:' + data.humidity+'</br>';
+            message += 'Inside Temperature:' + data.insideTemp+'</br>';
+            message += 'Inside Humidity:' + data.insideHumidity+'</br>';
+            message += 'Reading time:' + data.readingDateTime+"</br>";
             document.getElementById('lounge').innerHTML = message;
             break;
     }

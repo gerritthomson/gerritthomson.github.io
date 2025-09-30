@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Card & NFC Reader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .camera-container {
+            text-align: center;
+        }
+        video, canvas {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #captureBtn {
+            background-color: #2196F3;
+        }
+        #captureBtn:hover {
+            background-color: #1976D2;
+        }
+        #nfcStatus {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .hidden {
+            display: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Business Card & NFC Reader</h1>
+        
+        <!-- Business Card Section -->
+        <div class="section">
+            <h2>Business Card Scanner</h2>
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <br>
+                <canvas id="canvas" class="hidden"></canvas>
+                <br>
+                <button id="startCameraBtn">Start Camera</button>
+                <button id="captureBtn" class="hidden">Capture Image</button>
+            </div>
+            <div id="businessCardResult" class="result hidden"></div>
+        </div>
+
+        <!-- NFC Section -->
+        <div class="section">
+            <h2>NFC Identity Card Reader</h2>
+            <div id="nfcStatus" class="success">
+                NFC functionality requires a browser that supports NFC API (Chrome on Android)
+            </div>
+            <button id="readNfcBtn">Read NFC Card</button>
+            <div id="nfcResult" class="result hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // Business Card Capture
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const businessCardResult = document.getElementById('businessCardResult');
+
+        let stream = null;
+        
+        // Start camera
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = stream;
+                startCameraBtn.classList.add('hidden');
+                captureBtn.classList.remove('hidden');
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Could not access the camera. Please ensure you've granted permission.");
+            }
+        });
+
+        // Capture image
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to data URL and display
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            businessCardResult.innerHTML = `<strong>Captured Image:</strong><br>
+                                            <img src="${dataUrl}" style="max-width: 300px; max-height: 200px;">`;
+            businessCardResult.classList.remove('hidden');
+            
+            // Stop camera
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                startCameraBtn.classList.remove('hidden');
+                captureBtn.classList.add('hidden');
+            }
+        });
+
+        // NFC Reading
+        const readNfcBtn = document.getElementById('readNfcBtn');
+        const nfcStatus = document.getElementById('nfcStatus');
+        const nfcResult = document.getElementById('nfcResult');
+
+        // Check for NFC support
+        if ('NDEFReader' in window) {
+            nfcStatus.innerHTML = 'NFC API is supported. Click "Read NFC Card" to begin.';
+            nfcStatus.className = 'success';
+        } else {
+            nfcStatus.innerHTML = 'NFC API not supported on this browser/device.';
+            nfcStatus.className = 'error';
+            readNfcBtn.disabled = true;
+        }
+
+        // Read NFC card
+        readNfcBtn.addEventListener('click', async () => {
+            try {
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                
+                ndef.onreading = event => {
+                    const records = event.message.records;
+                    let result = '';
+                    
+                    records.forEach(record => {
+                        if (record.mediaType === 'text/plain') {
+                            result += `Text: ${new TextDecoder().decode(record.data)}\n`;
+                        } else if (record.mediaType === 'application/json') {
+                            result += `JSON: ${new TextDecoder().decode(record.data)}\n`;
+                        } else {
+                            result += `Record Type: ${record.recordType}\n`;
+                        }
+                    });
+                    
+                    nfcResult.innerHTML = `<strong>NFC Data:</strong>\n${result}`;
+                    nfcResult.classList.remove('hidden');
+                };
+                
+                ndef.onreadingerror = () => {
+                    nfcResult.innerHTML = 'Error reading NFC data';
+                    nfcResult.classList.remove('hidden');
+                };
+            } catch (err) {
+                console.error("NFC Error:", err);
+                nfcResult.innerHTML = `NFC Error: ${err.message}`;
+                nfcResult.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

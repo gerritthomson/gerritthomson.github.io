@@ -179,22 +179,13 @@
                 const ndef = new NDEFReader();
                 await ndef.scan();
                 
-                ndef.onreading = event => {
-                    const records = event.message.records;
-                    let result = '';
+                ndef.addEventListener("readingerror", () => {
+		      log("Argh! Cannot read data from the NFC tag. Try another one?");
+	    	});
+
+		ndef.addEventListener("reading", ({ message, serialNumber }) => {
                     
-                    records.forEach(record => {
-                        if (record.mediaType === 'text/plain') {
-                            result += `Text: ${new TextDecoder().decode(record.data)}\n`;
-                        } else if (record.mediaType === 'application/json') {
-                            result += `JSON: ${new TextDecoder().decode(record.data)}\n`;
-                        } else {
-                            result += `Record Type: ${record.recordType}\n`;
-				result += JSON.stringify(record);
-                        }
-                    });
-                    
-                    nfcResult.innerHTML = `<strong>NFC Data:</strong>\n${result}`;
+                    nfcResult.innerHTML = `> Serial Number: ${serialNumber}` + JSON.stringify(mesage);
                     nfcResult.classList.remove('hidden');
                 };
                 

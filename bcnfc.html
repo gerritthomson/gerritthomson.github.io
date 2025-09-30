@@ -85,7 +85,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Business Card & NFC Reader v0.1</h1>
+        <h1>Business Card & NFC Reader v0.11</h1>
         
         <!-- Business Card Section -->
         <div class="section">
@@ -185,7 +185,7 @@
 
 		ndef.addEventListener("reading", ({ message, serialNumber }) => {
                     
-                    nfcResult.innerHTML = `> Serial Number: ${serialNumber}` + JSON.stringify(message);
+                    nfcResult.innerHTML = `> Serial Number: ${serialNumber}`;
                     nfcResult.classList.remove('hidden');
                 };
                 

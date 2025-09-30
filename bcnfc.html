@@ -85,7 +85,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Business Card & NFC Reader</h1>
+        <h1>Business Card & NFC Reader v0.1</h1>
         
         <!-- Business Card Section -->
         <div class="section">
@@ -189,10 +189,6 @@
                     nfcResult.classList.remove('hidden');
                 };
                 
-                ndef.onreadingerror = () => {
-                    nfcResult.innerHTML = 'Error reading NFC data';
-                    nfcResult.classList.remove('hidden');
-                };
             } catch (err) {
                 console.error("NFC Error:", err);
                 nfcResult.innerHTML = `NFC Error: ${err.message}`;

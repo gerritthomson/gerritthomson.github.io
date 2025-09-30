@@ -190,6 +190,7 @@
                             result += `JSON: ${new TextDecoder().decode(record.data)}\n`;
                         } else {
                             result += `Record Type: ${record.recordType}\n`;
+				result += record;
                         }
                     });
                     

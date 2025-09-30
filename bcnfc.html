@@ -85,7 +85,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Business Card & NFC Reader v0.12</h1>
+        <h1>Business Card & NFC Reader v0.13</h1>
         
         <!-- Business Card Section -->
         <div class="section">
@@ -175,6 +175,7 @@
 
         // Read NFC card
         readNfcBtn.addEventListener('click', async () => {
+		nfcResult.innerHTML = 'waiting for scan';
             try {
                 const ndef = new NDEFReader();
                 await ndef.scan();

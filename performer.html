@@ -1,0 +1,1923 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Setlist Manager</title>
+        <style>
+            :root {
+                --bg: #0f1117;
+                --surface: #1a1d27;
+                --surface2: #242836;
+                --surface3: #2e3344;
+                --border: #363b4e;
+                --text: #e4e6f0;
+                --text-dim: #8b90a5;
+                --accent: #6c5ce7;
+                --accent-hover: #7f71ed;
+                --danger: #e74c5c;
+                --danger-hover: #f25c6c;
+                --success: #2ecc71;
+                --radius: 10px;
+                --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    "Segoe UI",
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                min-height: 100vh;
+                display: flex;
+            }
+
+            /* ── Sidebar ── */
+            .sidebar {
+                width: 240px;
+                background: var(--surface);
+                border-right: 1px solid var(--border);
+                padding: 24px 0;
+                display: flex;
+                flex-direction: column;
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                z-index: 100;
+            }
+
+            .sidebar .logo {
+                padding: 0 24px 24px;
+                font-size: 1.3rem;
+                font-weight: 700;
+                color: var(--accent);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border-bottom: 1px solid var(--border);
+                margin-bottom: 8px;
+            }
+
+            .sidebar .logo svg {
+                flex-shrink: 0;
+            }
+
+            .nav-item {
+                padding: 12px 24px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: var(--text-dim);
+                font-size: 0.95rem;
+                transition: all 0.15s;
+                border-left: 3px solid transparent;
+                user-select: none;
+            }
+
+            .nav-item:hover {
+                background: var(--surface2);
+                color: var(--text);
+            }
+            .nav-item.active {
+                background: var(--surface2);
+                color: var(--accent);
+                border-left-color: var(--accent);
+                font-weight: 600;
+            }
+
+            .nav-item .count {
+                margin-left: auto;
+                background: var(--surface3);
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 0.75rem;
+                color: var(--text-dim);
+            }
+
+            .nav-item.active .count {
+                background: var(--accent);
+                color: #fff;
+            }
+
+            .sidebar-footer {
+                margin-top: auto;
+                padding: 16px 24px;
+                border-top: 1px solid var(--border);
+            }
+
+            /* ── Main ── */
+            .main {
+                margin-left: 240px;
+                flex: 1;
+                padding: 32px 40px;
+                max-width: 960px;
+            }
+
+            .page-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 28px;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .page-header h1 {
+                font-size: 1.75rem;
+                font-weight: 700;
+            }
+            .page-header p {
+                color: var(--text-dim);
+                font-size: 0.9rem;
+                margin-top: 4px;
+            }
+
+            /* ── Buttons ── */
+            .btn {
+                padding: 10px 20px;
+                border: none;
+                border-radius: var(--radius);
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.15s;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-family: inherit;
+            }
+
+            .btn-primary {
+                background: var(--accent);
+                color: #fff;
+            }
+            .btn-primary:hover {
+                background: var(--accent-hover);
+                transform: translateY(-1px);
+            }
+
+            .btn-danger {
+                background: var(--danger);
+                color: #fff;
+            }
+            .btn-danger:hover {
+                background: var(--danger-hover);
+            }
+
+            .btn-ghost {
+                background: transparent;
+                color: var(--text-dim);
+                padding: 6px 10px;
+            }
+            .btn-ghost:hover {
+                color: var(--text);
+                background: var(--surface2);
+            }
+
+            .btn-sm {
+                padding: 6px 14px;
+                font-size: 0.82rem;
+            }
+
+            button:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+
+            /* ── Cards / List ── */
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+                margin-bottom: 12px;
+                transition: all 0.15s;
+            }
+
+            .card:hover {
+                border-color: var(--accent);
+            }
+
+            .card-header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+            }
+
+            .card-title {
+                font-size: 1.05rem;
+                font-weight: 600;
+            }
+            .card-meta {
+                color: var(--text-dim);
+                font-size: 0.82rem;
+                margin-top: 4px;
+            }
+            .card-actions {
+                display: flex;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            .card-body {
+                margin-top: 14px;
+            }
+
+            .tag {
+                display: inline-block;
+                background: var(--surface3);
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                color: var(--text-dim);
+                margin: 2px 4px 2px 0;
+            }
+
+            .empty-state {
+                text-align: center;
+                padding: 60px 20px;
+                color: var(--text-dim);
+            }
+
+            .empty-state svg {
+                margin-bottom: 16px;
+                opacity: 0.4;
+            }
+            .empty-state p {
+                font-size: 0.95rem;
+                margin-bottom: 20px;
+            }
+
+            /* ── Modal ── */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(4px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+            }
+
+            .modal-overlay.open {
+                opacity: 1;
+                pointer-events: all;
+            }
+
+            .modal {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                width: 520px;
+                max-width: 95vw;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: var(--shadow);
+                transform: translateY(20px) scale(0.97);
+                transition: transform 0.2s;
+            }
+
+            .modal-overlay.open .modal {
+                transform: translateY(0) scale(1);
+            }
+
+            .modal-header {
+                padding: 24px 24px 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .modal-header h2 {
+                font-size: 1.2rem;
+            }
+            .modal-body {
+                padding: 20px 24px;
+            }
+            .modal-footer {
+                padding: 16px 24px 24px;
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+            }
+
+            /* ── Form ── */
+            .form-group {
+                margin-bottom: 18px;
+            }
+            .form-group label {
+                display: block;
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--text-dim);
+                margin-bottom: 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                width: 100%;
+                padding: 10px 14px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                color: var(--text);
+                font-size: 0.95rem;
+                font-family: inherit;
+                transition: border-color 0.15s;
+            }
+
+            .form-group input:focus,
+            .form-group textarea:focus,
+            .form-group select:focus {
+                outline: none;
+                border-color: var(--accent);
+            }
+
+            .form-group textarea {
+                resize: vertical;
+                min-height: 60px;
+            }
+
+            .form-select {
+                padding: 10px 14px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                color: var(--text);
+                font-size: 0.95rem;
+                font-family: inherit;
+                min-width: 250px;
+                transition: border-color 0.15s;
+            }
+            .form-select:focus {
+                outline: none;
+                border-color: var(--accent);
+            }
+
+            .file-input-wrapper {
+                position: relative;
+                display: inline-block;
+                width: 100%;
+            }
+            .file-input-wrapper input[type="file"] {
+                width: 100%;
+                padding: 10px;
+                background: var(--surface2);
+                border: 1px dashed var(--border);
+                border-radius: 8px;
+                color: var(--text-dim);
+                cursor: pointer;
+            }
+            .file-input-wrapper input[type="file"]:hover {
+                border-color: var(--accent);
+            }
+
+            .file-status {
+                margin-top: 8px;
+                font-size: 0.85rem;
+                color: var(--text-dim);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            /* ── Relationship pills ── */
+            .rel-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-top: 8px;
+            }
+            .rel-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: var(--accent);
+                color: #fff;
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 0.82rem;
+                font-weight: 500;
+                animation: popIn 0.15s ease;
+            }
+
+            @keyframes popIn {
+                from {
+                    transform: scale(0.8);
+                    opacity: 0;
+                }
+                to {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+
+            .rel-pill button {
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: #fff;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.7rem;
+                line-height: 1;
+                transition: background 0.15s;
+            }
+
+            .rel-pill button:hover {
+                background: rgba(255, 255, 255, 0.4);
+            }
+
+            .rel-select-row {
+                display: flex;
+                gap: 8px;
+                margin-top: 8px;
+            }
+            .rel-select-row select {
+                flex: 1;
+            }
+            .rel-select-row .btn {
+                flex-shrink: 0;
+            }
+
+            /* ── Performing Page ── */
+            .perf-info {
+                margin-bottom: 24px;
+            }
+            .perf-info h2 {
+                font-size: 1.5rem;
+                margin-bottom: 4px;
+            }
+            .perf-info p {
+                color: var(--text-dim);
+                font-size: 0.95rem;
+            }
+
+            .set-block {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                margin-bottom: 16px;
+                overflow: hidden;
+            }
+
+            .set-header {
+                padding: 14px 16px;
+                background: var(--surface2);
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .set-header h3 {
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+
+            .sort-controls {
+                display: flex;
+                gap: 4px;
+            }
+
+            .song-list {
+                padding: 8px 0;
+            }
+
+            .song-row {
+                padding: 10px 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border-bottom: 1px solid var(--border);
+                transition: background 0.15s;
+            }
+
+            .song-row:last-child {
+                border-bottom: none;
+            }
+            .song-row.interactive {
+                cursor: pointer;
+            }
+            .song-row.interactive:hover {
+                background: var(--surface2);
+            }
+
+            .song-num {
+                color: var(--text-dim);
+                font-size: 0.85rem;
+                width: 24px;
+                text-align: right;
+            }
+
+            .song-name {
+                flex: 1;
+                font-weight: 500;
+            }
+
+            .file-icon {
+                font-size: 1.1rem;
+            }
+
+            /* ── Toast ── */
+            .toast-container {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                z-index: 2000;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .toast {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 0.88rem;
+                box-shadow: var(--shadow);
+                animation:
+                    slideIn 0.25s ease,
+                    fadeOut 0.3s ease 2.2s forwards;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .toast.success {
+                border-left: 3px solid var(--success);
+            }
+            .toast.error {
+                border-left: 3px solid var(--danger);
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            @keyframes fadeOut {
+                to {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+            }
+
+            /* ── Confirm dialog ── */
+            .confirm-text {
+                color: var(--text-dim);
+                line-height: 1.6;
+                font-size: 0.95rem;
+            }
+
+            /* ── Responsive ── */
+            @media (max-width: 768px) {
+                .sidebar {
+                    width: 60px;
+                    padding: 16px 0;
+                }
+                .sidebar .logo span,
+                .nav-item span,
+                .nav-item .count {
+                    display: none;
+                }
+                .sidebar .logo {
+                    padding: 0 14px 16px;
+                    justify-content: center;
+                }
+                .nav-item {
+                    justify-content: center;
+                    padding: 14px;
+                    border-left: none;
+                }
+                .nav-item.active {
+                    border-bottom: 2px solid var(--accent);
+                }
+                .main {
+                    margin-left: 60px;
+                    padding: 20px;
+                }
+                .modal {
+                    width: 95vw;
+                }
+                .page-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+                .form-select {
+                    width: 100%;
+                }
+                .sidebar-footer {
+                    padding: 12px 8px;
+                }
+                .sidebar-footer .btn span {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                    <path
+                        d="M9 18V5l12-2v13"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                    <circle
+                        cx="6"
+                        cy="18"
+                        r="3"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                    <circle
+                        cx="18"
+                        cy="16"
+                        r="3"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                </svg>
+                <span>Setlist Manager</span>
+            </div>
+            <div
+                class="nav-item active"
+                data-page="songs"
+                onclick="navigate('songs')"
+            >
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path
+                        d="M9 18V5l12-2v13"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                    <circle
+                        cx="6"
+                        cy="18"
+                        r="3"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                    <circle
+                        cx="18"
+                        cy="16"
+                        r="3"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                </svg>
+                <span>Songs</span>
+                <span class="count" id="count-songs">0</span>
+            </div>
+            <div class="nav-item" data-page="sets" onclick="navigate('sets')">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <rect
+                        x="3"
+                        y="3"
+                        width="7"
+                        height="7"
+                        rx="1"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                    <rect
+                        x="14"
+                        y="3"
+                        width="7"
+                        height="7"
+                        rx="1"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                    <rect
+                        x="3"
+                        y="14"
+                        width="7"
+                        height="7"
+                        rx="1"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                    <rect
+                        x="14"
+                        y="14"
+                        width="7"
+                        height="7"
+                        rx="1"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+                </svg>
+                <span>Sets</span>
+                <span class="count" id="count-sets">0</span>
+            </div>
+            <div
+                class="nav-item"
+                data-page="performances"
+                onclick="navigate('performances')"
+            >
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path
+                        d="M12 2L2 7l10 5 10-5-10-5z"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linejoin="round"
+                    />
+                    <path
+                        d="M2 17l10 5 10-5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                    <path
+                        d="M2 12l10 5 10-5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+                <span>Performances</span>
+                <span class="count" id="count-performances">0</span>
+            </div>
+            <div
+                class="nav-item"
+                data-page="performing"
+                onclick="navigate('performing')"
+            >
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path
+                        d="M12 2L2 7l10 5 10-5-10-5z"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linejoin="round"
+                    />
+                    <path
+                        d="M2 17l10 5 10-5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                    <path
+                        d="M2 12l10 5 10-5"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                </svg>
+                <span>Performing</span>
+            </div>
+
+            <div class="sidebar-footer">
+                <div style="display: flex; gap: 8px">
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        style="flex: 1"
+                        onclick="exportData()"
+                        title="Export backup"
+                    >
+                        ⬇ <span>Export</span>
+                    </button>
+                    <button
+                        class="btn btn-ghost btn-sm"
+                        style="flex: 1"
+                        onclick="document.getElementById('importInput').click()"
+                        title="Import backup"
+                    >
+                        ⬆ <span>Import</span>
+                    </button>
+                </div>
+                <input
+                    type="file"
+                    id="importInput"
+                    accept=".json"
+                    hidden
+                    onchange="importData(this)"
+                />
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main" id="app"></main>
+
+        <!-- Modal -->
+        <div
+            class="modal-overlay"
+            id="modalOverlay"
+            onclick="closeModalOutside(event)"
+        >
+            <div class="modal" id="modalContent"></div>
+        </div>
+
+        <!-- Toast container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <script>
+            // ── Data Layer ──
+            const DB_KEY = "setlist_manager_db";
+
+            function getDB() {
+                const raw = localStorage.getItem(DB_KEY);
+                if (raw) return JSON.parse(raw);
+                return { songs: [], sets: [], performances: [] };
+            }
+
+            function saveDB(db) {
+                try {
+                    localStorage.setItem(DB_KEY, JSON.stringify(db));
+                } catch (e) {
+                    if (e.name === "QuotaExceededError" || e.code === 22) {
+                        toast(
+                            "⚠️ Storage full! Delete files or export your data.",
+                            "error",
+                        );
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+
+            function genId() {
+                return (
+                    Date.now().toString(36) +
+                    Math.random().toString(36).slice(2, 7)
+                );
+            }
+
+            function now() {
+                return new Date().toISOString();
+            }
+
+            // ── Toast ──
+            function toast(msg, type = "success") {
+                const c = document.getElementById("toastContainer");
+                const t = document.createElement("div");
+                t.className = `toast ${type}`;
+                t.innerHTML = `${type === "success" ? "✓" : "✗"} ${msg}`;
+                c.appendChild(t);
+                setTimeout(() => t.remove(), 2500);
+            }
+
+            // ── Navigation ──
+            let currentPage = "songs";
+
+            function navigate(page) {
+                currentPage = page;
+                document.querySelectorAll(".nav-item").forEach((n) => {
+                    n.classList.toggle("active", n.dataset.page === page);
+                });
+                render();
+            }
+
+            // ── Render Router ──
+            function render() {
+                const db = getDB();
+                document.getElementById("count-songs").textContent =
+                    db.songs.length;
+                document.getElementById("count-sets").textContent =
+                    db.sets.length;
+                document.getElementById("count-performances").textContent =
+                    db.performances.length;
+
+                const app = document.getElementById("app");
+                if (currentPage === "songs") renderSongs(db, app);
+                else if (currentPage === "sets") renderSets(db, app);
+                else if (currentPage === "performances")
+                    renderPerformances(db, app);
+                else renderPerformingPage(db, app);
+            }
+
+            // ── Helper: File Type Detection ──
+            function getFileIcon(type) {
+                if (!type) return "📎";
+                if (type.startsWith("audio/")) return "🎵";
+                if (type.startsWith("image/")) return "🖼️";
+                if (type === "application/pdf") return "📄";
+                if (type.startsWith("text/")) return "📝";
+                if (
+                    type.includes("word") ||
+                    type.includes("doc") ||
+                    type.includes("rtf") ||
+                    type.includes("odt")
+                )
+                    return "📑";
+                if (
+                    type.includes("sheet") ||
+                    type.includes("excel") ||
+                    type.includes("csv")
+                )
+                    return "📊";
+                return "📎";
+            }
+
+            function isAudio(type) {
+                return type && type.startsWith("audio/");
+            }
+            function isImage(type) {
+                return type && type.startsWith("image/");
+            }
+            function isPreviewable(type) {
+                return (
+                    isAudio(type) ||
+                    isImage(type) ||
+                    type === "application/pdf" ||
+                    type.startsWith("text/")
+                );
+            }
+
+            function formatFileSize(bytes) {
+                if (!bytes) return "0 B";
+                const k = 1024;
+                const sizes = ["B", "KB", "MB", "GB"];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return (
+                    parseFloat((bytes / Math.pow(k, i)).toFixed(1)) +
+                    " " +
+                    sizes[i]
+                );
+            }
+
+            // ── Songs Page ──
+            function renderSongs(db, app) {
+                const songs = db.songs;
+                app.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>Songs</h1>
+        <p>Individual tracks with attached media files</p>
+      </div>
+      <button class="btn btn-primary" onclick="openSongModal()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Add Song
+      </button>
+    </div>
+    ${
+        songs.length === 0
+            ? emptyState("No songs yet", "Add your first song to get started.")
+            : songs
+                  .map((s) => {
+                      const hasFile = !!s.fileData;
+                      const icon = getFileIcon(s.fileType);
+                      const size = hasFile
+                          ? formatFileSize(s.fileData.length * 0.75)
+                          : "";
+                      return `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">${esc(s.name)}</div>
+                <div class="card-meta">Added ${formatDate(s.createdAt)} ${hasFile ? `· ${icon} ${esc(s.fileName || "File")} (${size})` : ""}</div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-ghost btn-sm" onclick="openSongModal('${s.id}')">Edit</button>
+                <button class="btn btn-ghost btn-sm" onclick="confirmDelete('song','${s.id}','${esc(s.name)}')">Delete</button>
+              </div>
+            </div>
+            ${
+                hasFile
+                    ? `
+              <div class="card-body">
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-primary btn-sm" onclick="handleFileAction('${s.id}', 'view')">👁 View</button>
+                  <button class="btn btn-ghost btn-sm" onclick="handleFileAction('${s.id}', 'download')">⬇ Download</button>
+                </div>
+              </div>
+            `
+                    : ""
+            }
+          </div>
+        `;
+                  })
+                  .join("")
+    }
+  `;
+            }
+
+            // ── Sets Page ──
+            function renderSets(db, app) {
+                const sets = db.sets;
+                app.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>Sets</h1>
+        <p>Collections of songs grouped together</p>
+      </div>
+      <button class="btn btn-primary" onclick="openSetModal()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Add Set
+      </button>
+    </div>
+    ${
+        sets.length === 0
+            ? emptyState("No sets yet", "Create a set to group your songs.")
+            : sets
+                  .map((st) => {
+                      const songIds = st.songIds || [];
+                      const songNames = songIds.map((id) => {
+                          const s = db.songs.find((x) => x.id === id);
+                          return s ? esc(s.name) : `<s>Unknown</s>`;
+                      });
+                      return `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">${esc(st.name)}</div>
+                <div class="card-meta">${songIds.length} song${songIds.length !== 1 ? "s" : ""} · Created ${formatDate(st.createdAt)}</div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-ghost btn-sm" onclick="openSetModal('${st.id}')">Edit</button>
+                <button class="btn btn-ghost btn-sm" onclick="confirmDelete('set','${st.id}','${esc(st.name)}')">Delete</button>
+              </div>
+            </div>
+            ${songNames.length > 0 ? `<div class="card-body"><div class="rel-list">${songNames.map((n) => `<span class="tag">🎵 ${n}</span>`).join("")}</div></div>` : ""}
+          </div>
+        `;
+                  })
+                  .join("")
+    }
+  `;
+            }
+
+            // ── Performances Page ──
+            function renderPerformances(db, app) {
+                const perfs = db.performances;
+                app.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>Performances</h1>
+        <p>Full shows composed of sets</p>
+      </div>
+      <button class="btn btn-primary" onclick="openPerfModal()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        Add Performance
+      </button>
+    </div>
+    ${
+        perfs.length === 0
+            ? emptyState(
+                  "No performances yet",
+                  "Create a performance to organize your sets.",
+              )
+            : perfs
+                  .map((p) => {
+                      const setIds = p.setIds || [];
+                      return `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">${esc(p.name)}</div>
+                <div class="card-meta">${setIds.length} set${setIds.length !== 1 ? "s" : ""} · ${p.date ? formatDate(p.date) : "No date"}${p.venue ? " · " + esc(p.venue) : ""}</div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-ghost btn-sm" onclick="openPerfModal('${p.id}')">Edit</button>
+                <button class="btn btn-ghost btn-sm" onclick="confirmDelete('performance','${p.id}','${esc(p.name)}')">Delete</button>
+              </div>
+            </div>
+            <div class="card-body">
+              ${setIds
+                  .map((sid) => {
+                      const st = db.sets.find((x) => x.id === sid);
+                      if (!st)
+                          return `<div class="set-in-perf"><div class="set-label" style="color:var(--text-dim)">Deleted set</div></div>`;
+                      const songNames = (st.songIds || []).map((id) => {
+                          const s = db.songs.find((x) => x.id === id);
+                          return s ? s.name : "Unknown";
+                      });
+                      return `
+                  <div class="set-in-perf">
+                    <div class="set-label">🎸 ${esc(st.name)} <span style="color:var(--text-dim);font-weight:400;font-size:0.82rem">(${songNames.length} songs)</span></div>
+                    <div class="song-list">${songNames.map((n, i) => `${i + 1}. ${esc(n)}`).join("<br>")}</div>
+                  </div>
+                `;
+                  })
+                  .join("")}
+            </div>
+          </div>
+        `;
+                  })
+                  .join("")
+    }
+  `;
+            }
+
+            // ── Performing Page ──
+            function renderPerformingPage(db, app) {
+                const lastPerfId =
+                    localStorage.getItem("lastPerfId") ||
+                    (db.performances.length ? db.performances[0].id : "");
+                app.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>Performing</h1>
+        <p>Live setlist view & ordering</p>
+      </div>
+      <select id="perfSelect" class="form-select" onchange="selectPerformance(this.value)">
+        <option value="">Select a performance...</option>
+        ${db.performances.map((p) => `<option value="${p.id}" ${p.id === lastPerfId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
+      </select>
+    </div>
+    <div id="perfContent"></div>
+  `;
+                if (lastPerfId) selectPerformance(lastPerfId);
+            }
+
+            function selectPerformance(id) {
+                if (!id) {
+                    document.getElementById("perfContent").innerHTML =
+                        emptyState(
+                            "No performance selected",
+                            "Choose a performance from the dropdown above.",
+                        );
+                    return;
+                }
+                localStorage.setItem("lastPerfId", id);
+                renderPerformingView(id);
+            }
+
+            function renderPerformingView(perfId) {
+                const db = getDB();
+                const perf = db.performances.find((p) => p.id === perfId);
+                if (!perf) return;
+
+                const setIds = perf.setIds || [];
+                let html = `
+    <div class="perf-info">
+      <h2>${esc(perf.name)}</h2>
+      <p>${perf.date ? formatDate(perf.date) : ""} ${perf.venue ? "• " + esc(perf.venue) : ""}</p>
+    </div>
+  `;
+
+                setIds.forEach((setId, setIdx) => {
+                    const set = db.sets.find((s) => s.id === setId);
+                    if (!set) return;
+                    const songIds = set.songIds || [];
+
+                    html += `
+      <div class="set-block">
+        <div class="set-header">
+          <h3>${esc(set.name)}</h3>
+          <div class="sort-controls">
+            <button class="btn btn-ghost btn-sm" ${setIdx === 0 ? "disabled" : ""} onclick="moveSetUp('${perfId}', ${setIdx})">↑</button>
+            <button class="btn btn-ghost btn-sm" ${setIdx === setIds.length - 1 ? "disabled" : ""} onclick="moveSetDown('${perfId}', ${setIdx})">↓</button>
+          </div>
+        </div>
+        <div class="song-list">
+    `;
+
+                    songIds.forEach((songId, songIdx) => {
+                        const song = db.songs.find((s) => s.id === songId);
+                        if (!song) return;
+                        const hasFile = !!song.fileData;
+                        const icon = getFileIcon(song.fileType);
+                        html += `
+        <div class="song-row ${hasFile ? "interactive" : ""}" ${hasFile ? `onclick="handleFileAction('${songId}', 'view')"` : ""}>
+          <span class="song-num">${songIdx + 1}</span>
+          <span class="song-name">${esc(song.name)}</span>
+          ${hasFile ? `<span class="file-icon">${icon}</span>` : ""}
+          <div class="sort-controls">
+            <button class="btn btn-ghost btn-sm" ${songIdx === 0 ? "disabled" : ""} onclick="event.stopPropagation(); moveSongUp('${setId}', ${songIdx})">↑</button>
+            <button class="btn btn-ghost btn-sm" ${songIdx === songIds.length - 1 ? "disabled" : ""} onclick="event.stopPropagation(); moveSongDown('${setId}', ${songIdx})">↓</button>
+          </div>
+        </div>
+      `;
+                    });
+
+                    html += `</div></div>`;
+                });
+
+                document.getElementById("perfContent").innerHTML = html;
+            }
+
+            function moveSetUp(perfId, idx) {
+                if (idx <= 0) return;
+                const db = getDB();
+                const perf = db.performances.find((p) => p.id === perfId);
+                const ids = perf.setIds;
+                [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+                saveDB(db);
+                renderPerformingView(perfId);
+            }
+
+            function moveSetDown(perfId, idx) {
+                const db = getDB();
+                const perf = db.performances.find((p) => p.id === perfId);
+                const ids = perf.setIds;
+                if (idx >= ids.length - 1) return;
+                [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+                saveDB(db);
+                renderPerformingView(perfId);
+            }
+
+            function moveSongUp(setId, idx) {
+                if (idx <= 0) return;
+                const db = getDB();
+                const set = db.sets.find((s) => s.id === setId);
+                const ids = set.songIds;
+                [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+                saveDB(db);
+                const perfId = document.getElementById("perfSelect")?.value;
+                if (perfId) renderPerformingView(perfId);
+            }
+
+            function moveSongDown(setId, idx) {
+                const db = getDB();
+                const set = db.sets.find((s) => s.id === setId);
+                const ids = set.songIds;
+                if (idx >= ids.length - 1) return;
+                [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+                saveDB(db);
+                const perfId = document.getElementById("perfSelect")?.value;
+                if (perfId) renderPerformingView(perfId);
+            }
+
+            // ── File Actions ──
+            function handleFileAction(id, action) {
+                const db = getDB();
+                const song = db.songs.find((s) => s.id === id);
+                if (!song || !song.fileData) {
+                    toast("No file attached", "error");
+                    return;
+                }
+
+                if (action === "download") {
+                    const a = document.createElement("a");
+                    a.href = song.fileData;
+                    a.download = song.fileName || `${song.name}.file`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    return;
+                }
+
+                if (action === "view") {
+                    if (isAudio(song.fileType)) {
+                        if (window._currentAudio) {
+                            window._currentAudio.pause();
+                            window._currentAudio.currentTime = 0;
+                        }
+                        window._currentAudio = new Audio(song.fileData);
+                        window._currentAudio
+                            .play()
+                            .catch((e) =>
+                                toast("Playback failed: " + e.message, "error"),
+                            );
+                    } else if (isImage(song.fileType)) {
+                        const win = window.open("", "_blank");
+                        win.document.write(
+                            `<!DOCTYPE html><html><head><title>${esc(song.name)}</title><style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:auto;}img{max-width:100%;max-height:100vh;object-fit:contain;}</style></head><body><img src="${song.fileData}" /></body></html>`,
+                        );
+                    } else if (
+                        song.fileType === "application/pdf" ||
+                        song.fileType.startsWith("text/")
+                    ) {
+                        window.open(song.fileData, "_blank");
+                    } else {
+                        toast(
+                            "File type not previewable. Downloading instead.",
+                        );
+                        handleFileAction(id, "download");
+                    }
+                }
+            }
+
+            // ── Modals ──
+            function openModal(html) {
+                document.getElementById("modalContent").innerHTML = html;
+                document.getElementById("modalOverlay").classList.add("open");
+            }
+
+            function closeModal() {
+                document
+                    .getElementById("modalOverlay")
+                    .classList.remove("open");
+                if (window._currentAudio) {
+                    window._currentAudio.pause();
+                    window._currentAudio = null;
+                }
+            }
+
+            function closeModalOutside(e) {
+                if (e.target === e.currentTarget) closeModal();
+            }
+
+            // ── Song Modal ──
+            function openSongModal(id) {
+                const db = getDB();
+                const song = id ? db.songs.find((s) => s.id === id) : null;
+                const title = song ? "Edit Song" : "New Song";
+                const nameVal = song ? esc(song.name) : "";
+                const hasFile = song && song.fileData;
+
+                // Initialize modal state
+                const modal = document.getElementById("modalContent");
+                modal._fileData = hasFile ? song.fileData : null;
+                modal._fileType = hasFile
+                    ? song.fileType || "application/octet-stream"
+                    : null;
+                modal._fileName = hasFile ? song.fileName || "" : null;
+                modal._fileChanged = false;
+
+                openModal(`
+    <div class="modal-header">
+      <h2>${title}</h2>
+      <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Song Name</label>
+        <input type="text" id="songName" value="${nameVal}" placeholder="e.g. Bohemian Rhapsody" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Attached File</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="songFile" accept="audio/*,image/*,.pdf,.txt,.doc,.docx,.rtf,.odt,.xlsx,.pptx,.csv">
+        </div>
+        <div id="fileStatus" class="file-status">
+          ${hasFile ? `${getFileIcon(modal._fileType)} <strong>${esc(modal._fileName)}</strong> (${formatFileSize(modal._fileData.length * 0.75)})` : "No file selected"}
+        </div>
+        ${hasFile ? `<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="clearSongFile()">🗑 Remove attached file</button>` : ""}
+      </div>
+      <div style="font-size:0.8rem; color:var(--text-dim); margin-top:8px; padding:8px; background:var(--surface2); border-radius:6px;">
+        ⚠️ Files are stored in browser storage (~5MB limit). Keep files under 2MB for safety.
+        <br>Supported: Audio, Images, PDF, Text, Documents, Spreadsheets.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSong('${id || ""}')">${song ? "Update" : "Create"}</button>
+    </div>
+  `);
+
+                // Setup file reader
+                const fileInput = document.getElementById("songFile");
+                fileInput.addEventListener("change", function (e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    if (file.size > 4 * 1024 * 1024) {
+                        toast(
+                            "⚠️ File is large. localStorage limit is ~5MB.",
+                            "error",
+                        );
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        modal._fileData = ev.target.result;
+                        modal._fileType =
+                            file.type || "application/octet-stream";
+                        modal._fileName = file.name;
+                        modal._fileChanged = true;
+                        document.getElementById("fileStatus").innerHTML =
+                            `${getFileIcon(modal._fileType)} <strong>${esc(file.name)}</strong> (${formatFileSize(file.size)})`;
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                setTimeout(
+                    () => document.getElementById("songName")?.focus(),
+                    100,
+                );
+            }
+
+            function clearSongFile() {
+                const modal = document.getElementById("modalContent");
+                modal._fileData = null;
+                modal._fileType = null;
+                modal._fileName = null;
+                modal._fileChanged = true;
+                document.getElementById("fileStatus").textContent =
+                    "File removed";
+                document.getElementById("songFile").value = "";
+            }
+
+            function saveSong(id) {
+                const name = document.getElementById("songName").value.trim();
+                if (!name) {
+                    toast("Song name is required", "error");
+                    return;
+                }
+
+                const modal = document.getElementById("modalContent");
+                const db = getDB();
+
+                if (id) {
+                    const song = db.songs.find((s) => s.id === id);
+                    song.name = name;
+                    if (modal._fileChanged) {
+                        song.fileData = modal._fileData;
+                        song.fileType = modal._fileType;
+                        song.fileName = modal._fileName;
+                    }
+                    toast("Song updated");
+                } else {
+                    db.songs.push({
+                        id: genId(),
+                        name,
+                        fileData: modal._fileData,
+                        fileType: modal._fileType,
+                        fileName: modal._fileName,
+                        createdAt: now(),
+                    });
+                    toast("Song created");
+                }
+                saveDB(db);
+                closeModal();
+                render();
+            }
+
+            // ── Set Modal ──
+            function openSetModal(id) {
+                const db = getDB();
+                const set = id ? db.sets.find((s) => s.id === id) : null;
+                const title = set ? "Edit Set" : "New Set";
+                const nameVal = set ? esc(set.name) : "";
+                const songIds = set ? set.songIds || [] : [];
+                const availableSongs = db.songs.filter(
+                    (s) => !songIds.includes(s.id),
+                );
+
+                openModal(`
+    <div class="modal-header">
+      <h2>${title}</h2>
+      <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Set Name</label>
+        <input type="text" id="setName" value="${nameVal}" placeholder="e.g. Opening Set" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Songs in this set</label>
+        <div class="rel-list" id="setSongList">
+          ${songIds
+              .map((sid) => {
+                  const s = db.songs.find((x) => x.id === sid);
+                  return s
+                      ? `<span class="rel-pill">${esc(s.name)}<button onclick="removeSongFromSet('${sid}')">✕</button></span>`
+                      : "";
+              })
+              .join("")}
+        </div>
+        <div class="rel-select-row">
+          <select id="setSongSelect">
+            <option value="">— Add a song —</option>
+            ${availableSongs.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="addSongToSet()">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSet('${id || ""}')">${set ? "Update" : "Create"}</button>
+    </div>
+  `);
+
+                document.getElementById("modalContent")._songIds = [...songIds];
+                setTimeout(
+                    () => document.getElementById("setName")?.focus(),
+                    100,
+                );
+            }
+
+            function addSongToSet() {
+                const sel = document.getElementById("setSongSelect");
+                const songId = sel.value;
+                if (!songId) return;
+
+                const songIds =
+                    document.getElementById("modalContent")._songIds;
+                if (songIds.includes(songId)) return;
+
+                const db = getDB();
+                const song = db.songs.find((s) => s.id === songId);
+                if (!song) return;
+
+                songIds.push(songId);
+
+                const list = document.getElementById("setSongList");
+                const pill = document.createElement("span");
+                pill.className = "rel-pill";
+                pill.innerHTML = `${esc(song.name)}<button onclick="removeSongFromSet('${songId}')">✕</button>`;
+                list.appendChild(pill);
+
+                sel.value = "";
+                sel.querySelector(`option[value="${songId}"]`)?.remove();
+            }
+
+            function removeSongFromSet(songId) {
+                const songIds =
+                    document.getElementById("modalContent")._songIds;
+                const idx = songIds.indexOf(songId);
+                if (idx > -1) songIds.splice(idx, 1);
+
+                const pills = document
+                    .getElementById("setSongList")
+                    .querySelectorAll(".rel-pill");
+                pills.forEach((p) => {
+                    if (
+                        p
+                            .querySelector("button")
+                            ?.getAttribute("onclick")
+                            ?.includes(songId)
+                    ) {
+                        p.remove();
+                    }
+                });
+
+                const sel = document.getElementById("setSongSelect");
+                const db = getDB();
+                const song = db.songs.find((s) => s.id === songId);
+                if (song) {
+                    const opt = document.createElement("option");
+                    opt.value = songId;
+                    opt.textContent = song.name;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function saveSet(id) {
+                const name = document.getElementById("setName").value.trim();
+                if (!name) {
+                    toast("Set name is required", "error");
+                    return;
+                }
+
+                const songIds =
+                    document.getElementById("modalContent")._songIds || [];
+                const db = getDB();
+
+                if (id) {
+                    const set = db.sets.find((s) => s.id === id);
+                    set.name = name;
+                    set.songIds = songIds;
+                    toast("Set updated");
+                } else {
+                    db.sets.push({
+                        id: genId(),
+                        name,
+                        songIds,
+                        createdAt: now(),
+                    });
+                    toast("Set created");
+                }
+                saveDB(db);
+                closeModal();
+                render();
+            }
+
+            // ── Performance Modal ──
+            function openPerfModal(id) {
+                const db = getDB();
+                const perf = id
+                    ? db.performances.find((p) => p.id === id)
+                    : null;
+                const title = perf ? "Edit Performance" : "New Performance";
+                const nameVal = perf ? esc(perf.name) : "";
+                const dateVal = perf ? perf.date || "" : "";
+                const venueVal = perf ? esc(perf.venue || "") : "";
+                const setIds = perf ? perf.setIds || [] : [];
+                const availableSets = db.sets.filter(
+                    (s) => !setIds.includes(s.id),
+                );
+
+                openModal(`
+    <div class="modal-header">
+      <h2>${title}</h2>
+      <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Performance Name</label>
+        <input type="text" id="perfName" value="${nameVal}" placeholder="e.g. Summer Festival 2025" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="perfDate" value="${dateVal}">
+      </div>
+      <div class="form-group">
+        <label>Venue</label>
+        <input type="text" id="perfVenue" value="${venueVal}" placeholder="e.g. Madison Square Garden">
+      </div>
+      <div class="form-group">
+        <label>Sets in this performance</label>
+        <div class="rel-list" id="perfSetList">
+          ${setIds
+              .map((sid) => {
+                  const s = db.sets.find((x) => x.id === sid);
+                  return s
+                      ? `<span class="rel-pill">${esc(s.name)}<button onclick="removeSetFromPerf('${sid}')">✕</button></span>`
+                      : "";
+              })
+              .join("")}
+        </div>
+        <div class="rel-select-row">
+          <select id="perfSetSelect">
+            <option value="">— Add a set —</option>
+            ${availableSets.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="addSetToPerf()">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePerf('${id || ""}')">${perf ? "Update" : "Create"}</button>
+    </div>
+  `);
+
+                document.getElementById("modalContent")._setIds = [...setIds];
+                setTimeout(
+                    () => document.getElementById("perfName")?.focus(),
+                    100,
+                );
+            }
+
+            function addSetToPerf() {
+                const sel = document.getElementById("perfSetSelect");
+                const setId = sel.value;
+                if (!setId) return;
+
+                const setIds = document.getElementById("modalContent")._setIds;
+                if (setIds.includes(setId)) return;
+
+                const db = getDB();
+                const set = db.sets.find((s) => s.id === setId);
+                if (!set) return;
+
+                setIds.push(setId);
+
+                const list = document.getElementById("perfSetList");
+                const pill = document.createElement("span");
+                pill.className = "rel-pill";
+                pill.innerHTML = `${esc(set.name)}<button onclick="removeSetFromPerf('${setId}')">✕</button>`;
+                list.appendChild(pill);
+
+                sel.value = "";
+                sel.querySelector(`option[value="${setId}"]`)?.remove();
+            }
+
+            function removeSetFromPerf(setId) {
+                const setIds = document.getElementById("modalContent")._setIds;
+                const idx = setIds.indexOf(setId);
+                if (idx > -1) setIds.splice(idx, 1);
+
+                const pills = document
+                    .getElementById("perfSetList")
+                    .querySelectorAll(".rel-pill");
+                pills.forEach((p) => {
+                    if (
+                        p
+                            .querySelector("button")
+                            ?.getAttribute("onclick")
+                            ?.includes(setId)
+                    ) {
+                        p.remove();
+                    }
+                });
+
+                const sel = document.getElementById("perfSetSelect");
+                const db = getDB();
+                const set = db.sets.find((s) => s.id === setId);
+                if (set) {
+                    const opt = document.createElement("option");
+                    opt.value = setId;
+                    opt.textContent = set.name;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function savePerf(id) {
+                const name = document.getElementById("perfName").value.trim();
+                if (!name) {
+                    toast("Performance name is required", "error");
+                    return;
+                }
+
+                const date = document.getElementById("perfDate").value;
+                const venue = document.getElementById("perfVenue").value.trim();
+                const setIds =
+                    document.getElementById("modalContent")._setIds || [];
+                const db = getDB();
+
+                if (id) {
+                    const perf = db.performances.find((p) => p.id === id);
+                    perf.name = name;
+                    perf.date = date;
+                    perf.venue = venue;
+                    perf.setIds = setIds;
+                    toast("Performance updated");
+                } else {
+                    db.performances.push({
+                        id: genId(),
+                        name,
+                        date,
+                        venue,
+                        setIds,
+                        createdAt: now(),
+                    });
+                    toast("Performance created");
+                }
+                saveDB(db);
+                closeModal();
+                render();
+            }
+
+            // ── Delete Confirmation ──
+            function confirmDelete(type, id, name) {
+                openModal(`
+    <div class="modal-header">
+      <h2>Delete ${type}</h2>
+      <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="confirm-text">Are you sure you want to delete <strong>"${esc(name)}"</strong>? This cannot be undone.</p>
+      <input type="hidden" id="delType" value="${type}">
+      <input type="hidden" id="delId" value="${id}">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="doDelete()">Delete</button>
+    </div>
+  `);
+            }
+
+            function doDelete() {
+                const type = document.getElementById("delType").value;
+                const id = document.getElementById("delId").value;
+                const db = getDB();
+
+                if (type === "song") {
+                    db.songs = db.songs.filter((s) => s.id !== id);
+                    db.sets.forEach((st) => {
+                        st.songIds = (st.songIds || []).filter(
+                            (sid) => sid !== id,
+                        );
+                    });
+                    toast("Song deleted");
+                } else if (type === "set") {
+                    db.sets = db.sets.filter((s) => s.id !== id);
+                    db.performances.forEach((p) => {
+                        p.setIds = (p.setIds || []).filter((sid) => sid !== id);
+                    });
+                    toast("Set deleted");
+                } else {
+                    db.performances = db.performances.filter(
+                        (p) => p.id !== id,
+                    );
+                    toast("Performance deleted");
+                }
+
+                saveDB(db);
+                closeModal();
+                render();
+            }
+
+            // ── Export / Import ──
+            function exportData() {
+                const db = getDB();
+                const dataStr = JSON.stringify(db, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `setlist-manager-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                toast("Data exported successfully");
+            }
+
+            function importData(input) {
+                const file = input.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (
+                            !Array.isArray(data.songs) ||
+                            !Array.isArray(data.sets) ||
+                            !Array.isArray(data.performances)
+                        ) {
+                            throw new Error(
+                                "Invalid backup structure. Missing songs/sets/performances arrays.",
+                            );
+                        }
+                        openImportConfirmModal(data);
+                    } catch (err) {
+                        toast("Import failed: " + err.message, "error");
+                    }
+                    input.value = "";
+                };
+                reader.readAsText(file);
+            }
+
+            function openImportConfirmModal(data) {
+                openModal(`
+    <div class="modal-header">
+      <h2>Import Backup</h2>
+      <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="confirm-text">This will <strong>replace all current data</strong> with the imported backup.</p>
+      <div style="margin-top:16px; padding:12px; background:var(--surface2); border-radius:8px; font-size:0.9rem; color:var(--text-dim);">
+        <div>Songs: ${data.songs.length}</div>
+        <div>Sets: ${data.sets.length}</div>
+        <div>Performances: ${data.performances.length}</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmImport()">Import & Replace</button>
+    </div>
+  `);
+                document.getElementById("modalContent")._importData = data;
+            }
+
+            function confirmImport() {
+                const data =
+                    document.getElementById("modalContent")._importData;
+                if (!data) return;
+                saveDB(data);
+                closeModal();
+                render();
+                toast("Data imported successfully");
+            }
+
+            // ── Helpers ──
+            function esc(str) {
+                const div = document.createElement("div");
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function formatDate(iso) {
+                if (!iso) return "";
+                const d = new Date(iso);
+                return d.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                });
+            }
+
+            function emptyState(title, desc) {
+                return `
+    <div class="empty-state">
+      <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
+      <p><strong>${title}</strong><br>${desc}</p>
+    </div>
+  `;
+            }
+
+            // ── Keyboard ──
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") closeModal();
+            });
+
+            // ── Init ──
+            render();
+        </script>
+    </body>
+</html>

@@ -592,11 +592,18 @@ function renderSongs(db, app) {
         <h1>Songs</h1>
         <p>Individual tracks with attached media files</p>
       </div>
-      <button class="btn btn-primary" onclick="openSongModal()">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-        Add Song
-      </button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ghost" onclick="document.getElementById('bulkImportInput').click()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          Import Songs
+        </button>
+        <button class="btn btn-primary" onclick="openSongModal()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          Add Song
+        </button>
+      </div>
     </div>
+    <input type="file" id="bulkImportInput" multiple accept="audio/*,image/*,.pdf,.txt,.doc,.docx,.rtf,.odt,.xlsx,.pptx,.csv" hidden onchange="importMultipleSongs(this)">
     ${songs.length === 0 ? emptyState('No songs yet', 'Add your first song to get started.') :
       songs.map(s => {
         const hasFile = !!s.fileData;
@@ -1013,6 +1020,32 @@ async function saveSong() {
   await putItem('songs', song);
   toast(id ? 'Song updated' : 'Song created');
   closeModal();
+  await render();
+}
+
+// ── Bulk Import Songs ──
+async function importMultipleSongs(input) {
+  const files = input.files;
+  if (!files.length) { input.value = ''; return; }
+
+  let imported = 0;
+
+  for (const file of files) {
+    const name = file.name.replace(/\.[^/.]+$/, '');
+    const song = {
+      id: genId(),
+      name,
+      fileData: file,
+      fileType: file.type || 'application/octet-stream',
+      fileName: file.name,
+      createdAt: now()
+    };
+    await putItem('songs', song);
+    imported++;
+  }
+
+  input.value = '';
+  toast(`Imported ${imported} song${imported > 1 ? 's' : ''}`);
   await render();
 }
 

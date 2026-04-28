@@ -377,6 +377,73 @@
 
   .confirm-text { color: var(--text-dim); line-height: 1.6; font-size: 0.95rem; }
 
+  .viewer-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 2000;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .viewer-overlay.open { opacity: 1; pointer-events: all; }
+
+  .viewer-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .viewer-controls {
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .viewer-speed {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; color: var(--text-dim);
+  }
+
+  .viewer-speed input[type="range"] {
+    width: 120px; accent-color: var(--accent);
+  }
+
+  .viewer-song-name {
+    font-weight: 600; font-size: 0.95rem;
+  }
+
+  .viewer-content {
+    flex: 1; overflow-y: auto;
+    display: flex; justify-content: center;
+    padding: 20px;
+    scroll-behavior: auto;
+  }
+
+  .viewer-content img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .viewer-content iframe {
+    width: 100%; height: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  .viewer-content pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 800px;
+    width: 100%;
+  }
+
   @media (max-width: 768px) {
     .sidebar { width: 60px; padding: 16px 0; }
     .sidebar .logo span, .nav-item span, .nav-item .count { display: none; }
@@ -435,6 +502,22 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<div class="viewer-overlay" id="viewerOverlay" onclick="closeViewerOutside(event)">
+  <div class="viewer-toolbar">
+    <div class="viewer-controls">
+      <button class="btn btn-ghost btn-sm" id="viewerPlayPause" onclick="toggleScroll()">▶</button>
+      <div class="viewer-speed">
+        <span>Speed</span>
+        <input type="range" id="viewerSpeed" min="1" max="100" value="30" oninput="updateScrollSpeed(this.value)">
+        <span id="viewerSpeedVal">30</span>
+      </div>
+    </div>
+    <span class="viewer-song-name" id="viewerSongName"></span>
+    <button class="btn btn-ghost btn-sm" onclick="closeViewer()">✕</button>
+  </div>
+  <div class="viewer-content" id="viewerContent"></div>
+</div>
 
 <script>
 // ── IndexedDB Layer ──
@@ -857,6 +940,12 @@ async function moveSongDown(setId, idx) {
 let currentAudioURL = null;
 let currentAudio = null;
 
+// ── Auto-scroll Viewer State ──
+let scrollAnimFrame = null;
+let scrollSpeed = 30;
+let isScrolling = false;
+let currentViewerURL = null;
+
 async function handleFileAction(id, action) {
   const db = await loadData();
   const song = db.songs.find(s => s.id === id);
@@ -875,15 +964,15 @@ async function handleFileAction(id, action) {
   }
 
   if (action === 'view') {
-    const url = URL.createObjectURL(song.fileData);
     if (isAudio(song.fileType)) {
+      const url = URL.createObjectURL(song.fileData);
       if (currentAudio) { currentAudio.pause(); currentAudio.src = ''; }
       if (currentAudioURL) URL.revokeObjectURL(currentAudioURL);
       currentAudioURL = url;
       currentAudio = new Audio(url);
       currentAudio.play().catch(e => toast('Playback failed: ' + e.message, 'error'));
     } else if (isImage(song.fileType) || song.fileType === 'application/pdf' || song.fileType.startsWith('text/')) {
-      window.open(url, '_blank');
+      openDocumentViewer(song);
     } else {
       toast('File type not previewable. Downloading instead.');
       handleFileAction(id, 'download');
@@ -892,6 +981,87 @@ async function handleFileAction(id, action) {
 }
 
 // ── Modals ──
+
+// ── Document Viewer with Auto-Scroll ──
+function startScroll() {
+  if (isScrolling) return;
+  isScrolling = true;
+  document.getElementById('viewerPlayPause').textContent = '⏸';
+  scrollLoop();
+}
+
+function stopScroll() {
+  isScrolling = false;
+  if (scrollAnimFrame) {
+    cancelAnimationFrame(scrollAnimFrame);
+    scrollAnimFrame = null;
+  }
+  document.getElementById('viewerPlayPause').textContent = '▶';
+}
+
+function scrollLoop() {
+  if (!isScrolling) return;
+  const content = document.getElementById('viewerContent');
+  content.scrollTop += scrollSpeed / 30;
+  if (content.scrollTop + content.clientHeight >= content.scrollHeight - 2) {
+    stopScroll();
+    return;
+  }
+  scrollAnimFrame = requestAnimationFrame(scrollLoop);
+}
+
+function toggleScroll() {
+  if (isScrolling) stopScroll(); else startScroll();
+}
+
+function updateScrollSpeed(val) {
+  scrollSpeed = parseInt(val, 10);
+  document.getElementById('viewerSpeedVal').textContent = val;
+}
+
+function closeViewer() {
+  stopScroll();
+  document.getElementById('viewerOverlay').classList.remove('open');
+  const content = document.getElementById('viewerContent');
+  content.innerHTML = '';
+  content.scrollTop = 0;
+  if (currentViewerURL) { URL.revokeObjectURL(currentViewerURL); currentViewerURL = null; }
+}
+
+function closeViewerOutside(e) {
+  if (e.target === e.currentTarget) closeViewer();
+}
+
+async function openDocumentViewer(song) {
+  const overlay = document.getElementById('viewerOverlay');
+  const content = document.getElementById('viewerContent');
+  document.getElementById('viewerSongName').textContent = song.name;
+
+  // Reset state
+  stopScroll();
+  content.innerHTML = '';
+  content.scrollTop = 0;
+  if (currentViewerURL) { URL.revokeObjectURL(currentViewerURL); currentViewerURL = null; }
+
+  if (isImage(song.fileType)) {
+    currentViewerURL = URL.createObjectURL(song.fileData);
+    const img = document.createElement('img');
+    img.src = currentViewerURL;
+    content.appendChild(img);
+  } else if (song.fileType === 'application/pdf') {
+    currentViewerURL = URL.createObjectURL(song.fileData);
+    const iframe = document.createElement('iframe');
+    iframe.src = currentViewerURL;
+    content.appendChild(iframe);
+  } else if (song.fileType.startsWith('text/')) {
+    const text = await song.fileData.text();
+    const pre = document.createElement('pre');
+    pre.textContent = text;
+    content.appendChild(pre);
+  }
+
+  overlay.classList.add('open');
+}
 function openModal(html) {
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modalOverlay').classList.add('open');

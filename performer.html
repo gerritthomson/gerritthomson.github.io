@@ -592,8 +592,8 @@
                 inset: 0;
                 background: var(--bg);
                 z-index: 2000;
-                display: flex;
-                flex-direction: column;
+                display: grid;
+                grid-template-rows: auto 1fr;
                 opacity: 0;
                 pointer-events: none;
                 transition: opacity 0.2s;
@@ -611,8 +611,6 @@
                 padding: 12px 20px;
                 background: var(--surface);
                 border-bottom: 1px solid var(--border);
-                flex-shrink: 0;
-                z-index: 10;
             }
 
             .viewer-controls {
@@ -621,17 +619,29 @@
                 gap: 16px;
             }
 
-            .viewer-speed {
+            .viewer-control-group {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 font-size: 0.85rem;
                 color: var(--text-dim);
             }
 
-            .viewer-speed input[type="range"] {
-                width: 120px;
-                accent-color: var(--accent);
+            .viewer-control-group input[type="number"] {
+                width: 56px;
+                padding: 4px 6px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--text);
+                font-size: 0.85rem;
+                text-align: center;
+                font-family: inherit;
+            }
+
+            .viewer-control-group input[type="number"]:focus {
+                outline: none;
+                border-color: var(--accent);
             }
 
             .viewer-song-name {
@@ -642,7 +652,7 @@
             .viewer-content {
                 flex: 1;
                 overflow-y: auto;
-                display: flex;
+                /*                display: flex; */
                 justify-content: center;
                 padding: 20px;
                 scroll-behavior: auto;
@@ -939,17 +949,53 @@
                     >
                         ⬆
                     </button>
-                    <div class="viewer-speed">
-                        <span>Speed</span>
+                    <div class="viewer-control-group">
+                        <span>Duration (s)</span>
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="adjustDuration(-5)"
+                        >
+                            −
+                        </button>
                         <input
-                            type="range"
-                            id="viewerSpeed"
+                            type="number"
+                            id="viewerDuration"
+                            value="200"
                             min="1"
-                            max="100"
-                            value="15"
-                            oninput="updateScrollSpeed(this.value)"
+                            max="9999"
+                            onchange="setDuration(this.value)"
                         />
-                        <span id="viewerSpeedVal">15</span>
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="adjustDuration(5)"
+                        >
+                            +
+                        </button>
+                    </div>
+                    <div class="viewer-control-group">
+                        <span>Speed</span>
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="adjustSpeed(-0.125)"
+                        >
+                            −
+                        </button>
+                        <input
+                            type="number"
+                            id="viewerSpeed"
+                            value="1"
+                            min="0.25"
+                            max="8"
+                            step="0.125"
+                            onchange="setSpeed(this.value)"
+                        />
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="adjustSpeed(0.125)"
+                        >
+                            +
+                        </button>
+                        <span id="viewerSpeedLabel">×1</span>
                     </div>
                 </div>
                 <span class="viewer-song-name" id="viewerSongName"></span>
@@ -1448,7 +1494,8 @@
 
             // ── Auto-scroll Viewer State ──
             let scrollAnimFrame = null;
-            let scrollSpeed = 15;
+            let scrollSpeed = 1;
+            let scrollDuration = 60;
             let isScrolling = false;
             let currentViewerURL = null;
 
@@ -1506,19 +1553,24 @@
             // ── Modals ──
 
             // ── Document Viewer with Auto-Scroll ──
-            let scrollLastTime = null;
+            let scrollStartTime = null;
+            let scrollStartTop = null;
+            let scrollTargetTop = null;
 
             function startScroll() {
                 if (isScrolling) return;
+                const content = document.getElementById("viewerContent");
+                scrollStartTime = performance.now();
+                scrollStartTop = content.scrollTop;
+                scrollTargetTop = content.scrollHeight - content.clientHeight;
                 isScrolling = true;
-                scrollLastTime = null;
                 document.getElementById("viewerPlayPause").textContent = "⏸";
                 scrollLoop();
             }
 
             function stopScroll() {
                 isScrolling = false;
-                scrollLastTime = null;
+                scrollStartTime = null;
                 if (scrollAnimFrame) {
                     cancelAnimationFrame(scrollAnimFrame);
                     scrollAnimFrame = null;
@@ -1530,15 +1582,13 @@
                 if (!isScrolling) return;
                 const content = document.getElementById("viewerContent");
                 const now = performance.now();
-                const dt = scrollLastTime
-                    ? (now - scrollLastTime) / 1000
-                    : 0.016;
-                scrollLastTime = now;
-                content.scrollTop += scrollSpeed * dt;
-                if (
-                    content.scrollTop + content.clientHeight >=
-                    content.scrollHeight - 2
-                ) {
+                const elapsed = (now - scrollStartTime) / 1000;
+                const effectiveDuration = scrollDuration / scrollSpeed;
+                const progress = Math.min(elapsed / effectiveDuration, 1);
+                const targetTop = content.scrollHeight - content.clientHeight;
+                content.scrollTop =
+                    scrollStartTop + (targetTop - scrollStartTop) * progress;
+                if (progress >= 1) {
                     stopScroll();
                     return;
                 }
@@ -1552,12 +1602,52 @@
 
             function scrollToTop() {
                 const content = document.getElementById("viewerContent");
-                content.scrollTop = 0;
+                stopScroll();
+                content.animate(
+                    { scrollTop: 0 },
+                    { duration: 300, easing: "ease-out", fill: "forwards" },
+                );
             }
 
-            function updateScrollSpeed(val) {
-                scrollSpeed = parseInt(val, 10);
-                document.getElementById("viewerSpeedVal").textContent = val;
+            function adjustDuration(delta) {
+                const input = document.getElementById("viewerDuration");
+                let val = parseInt(input.value, 10) + delta;
+                if (val < 1) val = 1;
+                if (val > 9999) val = 9999;
+                input.value = val;
+                scrollDuration = val;
+            }
+
+            function setDuration(val) {
+                let num = parseInt(val, 10);
+                if (isNaN(num) || num < 1) num = 1;
+                if (num > 9999) num = 9999;
+                document.getElementById("viewerDuration").value = num;
+                scrollDuration = num;
+            }
+
+            function adjustSpeed(delta) {
+                const input = document.getElementById("viewerSpeed");
+                let val = parseFloat(input.value) + delta;
+                if (val < 0.25) val = 0.25;
+                if (val > 8) val = 8;
+                input.value =
+                    val % 1 === 0
+                        ? val.toString()
+                        : val.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+                scrollSpeed = val;
+                document.getElementById("viewerSpeedLabel").textContent =
+                    "×" + val;
+            }
+
+            function setSpeed(val) {
+                let num = parseFloat(val);
+                if (isNaN(num) || num < 0.25) num = 0.25;
+                if (num > 8) num = 8;
+                document.getElementById("viewerSpeed").value = num;
+                scrollSpeed = num;
+                document.getElementById("viewerSpeedLabel").textContent =
+                    "×" + num;
             }
 
             function closeViewer() {
@@ -1608,9 +1698,6 @@
                     canvas.style.height = "auto";
                     canvas.style.marginBottom = "12px";
                     canvas.style.boxShadow = "0 2px 12px rgba(0,0,0,0.4)";
-                    if (i == 1) {
-                        canvas.style.marginTop = "135em";
-                    }
                     const ctx = canvas.getContext("2d");
                     await page.render({ canvasContext: ctx, viewport }).promise;
                     container.appendChild(canvas);
@@ -1626,7 +1713,6 @@
                 // Reset state
                 stopScroll();
                 content.innerHTML = "";
-                content.scrollTop = 0;
                 if (currentViewerURL) {
                     URL.revokeObjectURL(currentViewerURL);
                     currentViewerURL = null;
@@ -1648,8 +1734,10 @@
                     content.appendChild(pre);
                 }
 
-                content.scrollTop = 0;
                 overlay.classList.add("open");
+                requestAnimationFrame(() => {
+                    content.scrollTop = 0;
+                });
             }
             function openModal(html) {
                 document.getElementById("modalContent").innerHTML = html;

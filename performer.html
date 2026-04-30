@@ -2410,7 +2410,7 @@
       <button class="btn btn-ghost" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <p class="confirm-text">This will <strong>replace all current data</strong> with the imported backup.</p>
+      <p class="confirm-text">This will <strong>merge</strong> the imported backup with your current data. Items that already exist will be skipped.</p>
       <div style="margin-top:16px; padding:12px; background:var(--surface2); border-radius:8px; font-size:0.9rem; color:var(--text-dim);">
         <div>Songs: ${data.songs.length}</div>
         <div>Sets: ${data.sets.length}</div>
@@ -2419,7 +2419,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmImport()">Import & Replace</button>
+      <button class="btn btn-primary" onclick="confirmImport()">Import & Merge</button>
     </div>
   `);
                 document.getElementById("modalContent")._importData = data;
@@ -2430,21 +2430,40 @@
                     document.getElementById("modalContent")._importData;
                 if (!data) return;
 
-                // Clear existing
-                for (const store of ["songs", "sets", "performances"]) {
-                    const tx = dbInstance.transaction(store, "readwrite");
-                    tx.objectStore(store).clear();
-                }
+                // Get existing IDs to skip duplicates
+                const existingSongs = new Set(
+                    (await getAll("songs")).map((s) => s.id)
+                );
+                const existingSets = new Set(
+                    (await getAll("sets")).map((s) => s.id)
+                );
+                const existingPerfs = new Set(
+                    (await getAll("performances")).map((p) => p.id)
+                );
 
-                // Insert new
-                for (const song of data.songs) await putItem("songs", song);
-                for (const set of data.sets) await putItem("sets", set);
-                for (const perf of data.performances)
-                    await putItem("performances", perf);
+                let imported = 0;
+                for (const song of data.songs) {
+                    if (!existingSongs.has(song.id)) {
+                        await putItem("songs", song);
+                        imported++;
+                    }
+                }
+                for (const set of data.sets) {
+                    if (!existingSets.has(set.id)) {
+                        await putItem("sets", set);
+                        imported++;
+                    }
+                }
+                for (const perf of data.performances) {
+                    if (!existingPerfs.has(perf.id)) {
+                        await putItem("performances", perf);
+                        imported++;
+                    }
+                }
 
                 closeModal();
                 await render();
-                toast("Data imported successfully");
+                toast(`Imported ${imported} new item${imported !== 1 ? "s" : ""}`);
             }
 
             // ── Keyboard & Init ──

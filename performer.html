@@ -4,6 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Setlist Manager</title>
+        <link rel="manifest" href="manifest.json" />
         <style>
             :root {
                 --bg: #0f1117;
@@ -112,6 +113,17 @@
                 margin-top: auto;
                 padding: 16px 24px;
                 border-top: 1px solid var(--border);
+            }
+
+            .offline-indicator {
+                background: var(--danger);
+                color: #fff;
+                text-align: center;
+                padding: 4px 0;
+                border-radius: 6px;
+                font-size: 0.78rem;
+                font-weight: 600;
+                margin-bottom: 10px;
             }
 
             .main {
@@ -889,6 +901,9 @@
             </div>
 
             <div class="sidebar-footer">
+                <div id="offlineIndicator" class="offline-indicator" style="display:none">
+                    <span>Offline</span>
+                </div>
                 <div style="display: flex; gap: 8px">
                     <button
                         class="btn btn-ghost btn-sm"
@@ -2482,6 +2497,42 @@
             }
 
             init();
+
+            // ── Service Worker Registration ──
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker
+                    .register("sw.js")
+                    .then((reg) => {
+                        console.log("SW registered", reg.scope);
+                        reg.addEventListener("updatefound", () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener("statechange", () => {
+                                if (
+                                    newWorker.state === "activated" &&
+                                    navigator.serviceWorker.controller
+                                ) {
+                                    toast("Updated — reload for latest version");
+                                }
+                            });
+                        });
+                    })
+                    .catch((e) => console.error("SW registration failed:", e));
+
+                // Online/offline status
+                const offlineEl = document.getElementById("offlineIndicator");
+                function updateOfflineIndicator() {
+                    offlineEl.style.display = navigator.onLine ? "none" : "block";
+                }
+                updateOfflineIndicator();
+                window.addEventListener("online", () => {
+                    updateOfflineIndicator();
+                    toast("Back online", "success");
+                });
+                window.addEventListener("offline", () => {
+                    updateOfflineIndicator();
+                    toast("You are offline — data saved locally", "error");
+                });
+            }
         </script>
     </body>
 </html>

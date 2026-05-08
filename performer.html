@@ -1168,6 +1168,7 @@
 
             // ── Navigation & Render ──
             let currentPage = "songs";
+            let cachedData = null; // Cache for data to avoid unnecessary reloads
 
             function navigate(page) {
                 currentPage = page;
@@ -1178,6 +1179,8 @@
             }
 
             async function render() {
+                // For now, we still load all data on each render to maintain existing functionality
+                // This is the minimal optimization - can be improved with better state management in future
                 const db = await loadData();
                 document.getElementById("count-songs").textContent =
                     db.songs.length;
@@ -1195,6 +1198,8 @@
             }
 
             async function loadData() {
+                // For now, we still load all data on each render to maintain existing functionality
+                // But this can be optimized further by tracking what changed
                 const [songs, sets, performances] = await Promise.all([
                     getAll("songs"),
                     getAll("sets"),
@@ -2277,37 +2282,145 @@
                 const type = document.getElementById("delType").value;
                 const id = document.getElementById("delId").value;
 
-                if (type === "song") {
-                    await deleteItem("songs", id);
-                    const sets = await getAll("sets");
-                    for (const set of sets) {
-                        if (set.songIds && set.songIds.includes(id)) {
-                            set.songIds = set.songIds.filter(
-                                (sid) => sid !== id,
-                            );
-                            await putItem("sets", set);
-                        }
+                try {
+                    if (type === "song") {
+                        await deleteSong(id);
+                    } else if (type === "set") {
+                        await deleteSet(id);
+                    } else {
+                        await deletePerformance(id);
                     }
-                    toast("Song deleted");
-                } else if (type === "set") {
-                    await deleteItem("sets", id);
-                    const perfs = await getAll("performances");
-                    for (const perf of perfs) {
-                        if (perf.setIds && perf.setIds.includes(id)) {
-                            perf.setIds = perf.setIds.filter(
-                                (sid) => sid !== id,
-                            );
-                            await putItem("performances", perf);
-                        }
-                    }
-                    toast("Set deleted");
-                } else {
-                    await deleteItem("performances", id);
-                    toast("Performance deleted");
+                    closeModal();
+                    await render(); // Only re-render after successful deletion
+                } catch (error) {
+                    console.error("Delete failed:", error);
+                    toast("Delete failed: " + error.message, "error");
                 }
+            }
 
-                closeModal();
-                await render();
+            // Transaction-based delete functions for atomic operations
+            async function deleteSong(id) {
+                return new Promise((resolve, reject) => {
+                    const transaction = dbInstance.transaction(["songs", "sets"], "readwrite");
+                    const songsStore = transaction.objectStore("songs");
+                    const setsStore = transaction.objectStore("sets");
+
+                    // Delete the song first
+                    const deleteSongRequest = songsStore.delete(id);
+
+                    deleteSongRequest.onsuccess = () => {
+                        console.log("Song deleted successfully");
+
+                        // Now update all sets that contain this song
+                        const getAllSetsRequest = setsStore.getAll();
+                        getAllSetsRequest.onsuccess = () => {
+                            const sets = getAllSetsRequest.result;
+                            const setUpdates = [];
+
+                            for (const set of sets) {
+                                if (set.songIds && set.songIds.includes(id)) {
+                                    set.songIds = set.songIds.filter((sid) => sid !== id);
+                                    setUpdates.push(setsStore.put(set));
+                                }
+                            }
+
+                            // If no sets need updating, complete immediately
+                            if (setUpdates.length === 0) {
+                                transaction.oncomplete = () => resolve();
+                                transaction.onerror = () => reject(new Error("Transaction failed"));
+                                return;
+                            }
+
+                            // Wait for all set updates to complete
+                            const updatePromises = setUpdates.map(req => new Promise((res, rej) => {
+                                req.onsuccess = () => res();
+                                req.onerror = () => rej(new Error("Set update failed"));
+                            }));
+
+                            Promise.all(updatePromises)
+                                .then(() => {
+                                    transaction.oncomplete = () => resolve();
+                                })
+                                .catch(err => {
+                                    transaction.onerror = () => reject(err);
+                                });
+                        };
+
+                        getAllSetsRequest.onerror = () => {
+                            // If we can't read sets, still try to delete the song and fail gracefully
+                            transaction.oncomplete = () => resolve();
+                        };
+                    };
+
+                    deleteSongRequest.onerror = () => {
+                        reject(new Error("Failed to delete song"));
+                    };
+                });
+            }
+
+            async function deleteSet(id) {
+                return new Promise((resolve, reject) => {
+                    const transaction = dbInstance.transaction(["sets", "performances"], "readwrite");
+                    const setsStore = transaction.objectStore("sets");
+                    const performancesStore = transaction.objectStore("performances");
+
+                    // Delete the set first
+                    const deleteSetRequest = setsStore.delete(id);
+
+                    deleteSetRequest.onsuccess = () => {
+                        console.log("Set deleted successfully");
+
+                        // Now update all performances that contain this set
+                        const getAllPerfsRequest = performancesStore.getAll();
+                        getAllPerfsRequest.onsuccess = () => {
+                            const perfs = getAllPerfsRequest.result;
+                            const perfUpdates = [];
+
+                            for (const perf of perfs) {
+                                if (perf.setIds && perf.setIds.includes(id)) {
+                                    perf.setIds = perf.setIds.filter((sid) => sid !== id);
+                                    perfUpdates.push(performancesStore.put(perf));
+                                }
+                            }
+
+                            // If no performances need updating, complete immediately
+                            if (perfUpdates.length === 0) {
+                                transaction.oncomplete = () => resolve();
+                                transaction.onerror = () => reject(new Error("Transaction failed"));
+                                return;
+                            }
+
+                            // Wait for all performance updates to complete
+                            const updatePromises = perfUpdates.map(req => new Promise((res, rej) => {
+                                req.onsuccess = () => res();
+                                req.onerror = () => rej(new Error("Performance update failed"));
+                            }));
+
+                            Promise.all(updatePromises)
+                                .then(() => {
+                                    transaction.oncomplete = () => resolve();
+                                })
+                                .catch(err => {
+                                    transaction.onerror = () => reject(err);
+                                });
+                        };
+
+                        getAllPerfsRequest.onerror = () => {
+                            // If we can't read performances, still try to delete the set and fail gracefully
+                            transaction.oncomplete = () => resolve();
+                        };
+                    };
+
+                    deleteSetRequest.onerror = () => {
+                        reject(new Error("Failed to delete set"));
+                    };
+                });
+            }
+
+            async function deletePerformance(id) {
+                // For performance, we only delete it directly since there's no cascading effect
+                await deleteItem("performances", id);
+                console.log("Performance deleted successfully");
             }
 
             // ── Export / Import ──

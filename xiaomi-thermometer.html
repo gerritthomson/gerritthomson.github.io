@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xiaomi Temperature Sensor Monitor</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #242836;
+            --accent: #6c5ce7;
+            --text: #e4e6f0;
+            --text-dim: #8b90a5;
+            --success: #2ecc71;
+            --danger: #e74c5c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 32px;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .status-card {
+            background: var(--surface);
+            border: 1px solid var(--surface2);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--surface2);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        #connectBtn {
+            margin-top: 16px;
+            padding: 12px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #connectBtn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(108, 92, 231, 0.3);
+        }
+
+        #connectBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .devices-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .device-card {
+            background: var(--surface);
+            border: 1px solid var(--surface2);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent);
+        }
+
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .device-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .device-rssi {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .readings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .reading-item {
+            background: var(--surface2);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .reading-label {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .reading-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .reading-unit {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .battery-bar {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .battery-icon {
+            width: 24px;
+            height: 12px;
+            border: 2px solid var(--text-dim);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .battery-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 2px;
+            transition: width 0.5s, background-color 0.5s;
+        }
+
+        .battery-value {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .log-panel {
+            margin-top: 24px;
+            background: var(--surface);
+            border: 1px solid var(--surface2);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .log-container {
+            max-height: 240px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.82rem;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .log-entry {
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            background: var(--surface2);
+        }
+
+        .log-time {
+            color: var(--accent);
+            margin-right: 8px;
+        }
+
+        .no-devices {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+        }
+
+        .no-devices p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .features-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .feature-item {
+            background: var(--surface2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        @media (max-width: 480px) {
+            .readings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Xiaomi Temperature Monitor</h1>
+            <p class="subtitle">Listen to BLE beacon transmissions from Xiaomi sensors</p>
+        </header>
+
+        <section class="status-card">
+            <div id="connectionStatus" class="status-indicator">
+                <span class="status-dot"></span>
+                Bluetooth Not Started
+            </div>
+            <button id="connectBtn">Start Scanning</button>
+        </section>
+
+        <div id="features" class="features-list">
+            <div class="feature-item">Temperature (°C/°F)</div>
+            <div class="feature-item">Humidity (%)</div>
+            <div class="feature-item">Battery Level</div>
+            <div class="feature-item">RSSI Signal</div>
+            <div class="feature-item">Timestamp</div>
+            <div class="feature-item">Auto-refresh</div>
+        </div>
+
+        <section id="devicesSection" style="display: none;">
+            <h2 style="margin-bottom: 16px;">Detected Sensors</h2>
+            <div id="devicesList" class="devices-list">
+                <!-- Device cards will be rendered here -->
+            </div>
+        </section>
+
+        <section class="log-panel">
+            <div class="log-header">
+                <span>Raw Data Log</span>
+                <button class="clear-btn" onclick="app.clearLog()">Clear</button>
+            </div>
+            <div id="logContainer" class="log-container">
+                <!-- Log entries will appear here -->
+            </div>
+        </section>
+
+        <p style="text-align: center; color: var(--text-dim); margin-top: 24px; font-size: 0.85rem;">
+            Note: Your browser must support Web Bluetooth API. Works best on Chrome/Edge on Windows/Mac/Linux.
+            Devices broadcast continuously - no connection required!
+        </p>
+    </div>
+
+    <script>
+        // Xiaomi BLE Service UUIDs and Data Flags
+        const SERVICE_UUIDS = {
+            manufacturerSpecific: '0000fe95-0000-1000-8000-00805f9b34fb',
+            serviceData: '0000fd50-0000-1000-8000-00805f9b34fb'
+        };
+
+        // Xiaomi device types and their parsing functions
+        const DEVICE_TYPES = {
+            'AA:01': { name: 'Mijia Temphum', parse: parseXM32H },
+            'AA:02': { name: 'Mijia Temphum', parse: parseXM32H },
+            'AA:03': { name: 'Mijia Temphum', parse: parseXM32H },
+            'E8:FF:05:4D:67:E9': { name: 'Mijia Temphum 2', parse: parseXM32H },
+            'AA:BB:CC:10:0C:xx': { name: 'Mijia Temphum', parse: parseXM32H }
+        };
+
+        // Common Xiaomi sensor manufacturer data patterns
+        const XIAMOI_MODELS = {
+            'MJ_HT_V1': 'Xiaomi MJ_HT_V1',
+            'CGG1': 'Qingping Temp & Hum',
+            'CGD1': 'Qingping Temp & Hum Pro',
+            'JQJCY01YM': 'Croptemp',
+            'HHCCJCY01': 'HHCC Plant Sensor',
+            'GCLS002': 'Grove Temp & Hum'
+        };
+
+        class XiaomiThermometerApp {
+            constructor() {
+                this.devices = new Map();
+                this.logEntries = [];
+                this.scanning = false;
+                this.observer = null;
+
+                this.ui = {
+                    connectBtn: document.getElementById('connectBtn'),
+                    connectionStatus: document.getElementById('connectionStatus'),
+                    devicesSection: document.getElementById('devicesSection'),
+                    devicesList: document.getElementById('devicesList'),
+                    logContainer: document.getElementById('logContainer')
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.ui.connectBtn.addEventListener('click', () => this.startScanning());
+
+                // Check Bluetooth availability
+                if (!navigator.bluetooth) {
+                    this.log('Bluetooth API not available in this browser');
+                    this.setStatus('Bluetooth Not Available', false);
+                    this.ui.connectBtn.disabled = true;
+                }
+            }
+
+            setStatus(message, active) {
+                const dot = this.ui.connectionStatus.querySelector('.status-dot');
+                const text = this.ui.connectionStatus.querySelector('span:last-child');
+
+                if (active === undefined || active === null) {
+                    this.ui.connectionStatus.classList.remove('active');
+                } else if (active) {
+                    this.ui.connectionStatus.classList.add('active');
+                }
+
+                text.textContent = message;
+            }
+
+            log(message, type = 'info') {
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+                this.logEntries.unshift({ time: timeStr, message, type });
+                if (this.logEntries.length > 50) {
+                    this.logEntries.pop();
+                }
+
+                this.renderLog();
+            }
+
+            renderLog() {
+                this.ui.logContainer.innerHTML = this.logEntries.map(entry =>
+                    `<div class="log-entry">
+                        <span class="log-time">[${entry.time}]</span>
+                        <span style="color: ${this.getLogColor(entry.type)}">${entry.message}</span>
+                    </div>`
+                ).join('');
+            }
+
+            getLogColor(type) {
+                switch (type) {
+                    case 'success': return '#2ecc71';
+                    case 'error': return '#e74c5c';
+                    case 'warning': return '#f39c12';
+                    default: return '#8b90a5';
+                }
+            }
+
+            clearLog() {
+                this.logEntries = [];
+                this.renderLog();
+            }
+
+            async startScanning() {
+                if (!navigator.bluetooth) {
+                    alert('Bluetooth API is not available in your browser.');
+                    return;
+                }
+
+                try {
+                    this.setStatus('Scanning for devices...', true);
+                    this.ui.connectBtn.disabled = true;
+                    this.scanning = true;
+
+                    // Request BLE device with Xiaomi service filter
+                    const device = await navigator.bluetooth.requestDevice({
+                        filters: [
+                            { services: [SERVICE_UUIDS.manufacturerSpecific] },
+                            { namePrefix: 'Xiaomi' },
+                            { namePrefix: 'MJ_HT' },
+                            { namePrefix: 'CGG1' }
+                        ],
+                        optionalServices: Object.values(SERVICE_UUIDS)
+                    });
+
+                    this.log(`Connected to: ${device.name || 'Unknown Device'}`, 'success');
+                    this.log(`Device ID: ${device.id}`);
+
+                    // Listen for advertisements
+                    await device.gatt.connect();
+
+                    // Parse manufacturer data from the device
+                    if (device.advertisementData) {
+                        this.handleAdvertisement(device);
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.log(`Error: ${error.message}`, 'error');
+                    this.setStatus('Scan Failed', false);
+                    this.ui.connectBtn.disabled = false;
+
+                    // Only show alert for actual errors, not user cancellation
+                    if (error.name !== 'AbortError') {
+                        alert('Failed to scan for devices. Make sure Bluetooth is enabled.');
+                    }
+                }
+            }
+
+            async startContinuousScanning() {
+                try {
+                    this.setStatus('Scanning for Xiaomi sensors...', true);
+                    this.ui.connectBtn.disabled = true;
+                    this.scanning = true;
+
+                    // Use requestDevice with continuous scanning
+                    const device = await navigator.bluetooth.requestDevice({
+                        filters: [
+                            { services: [SERVICE_UUIDS.manufacturerSpecific] }
+                        ],
+                        optionalServices: Object.values(SERVICE_UUIDS)
+                    });
+
+                    this.log(`Found sensor: ${device.name || 'Unknown'}`, 'success');
+                    this.ui.connectBtn.disabled = false;
+
+                } catch (error) {
+                    console.error('Scan error:', error);
+                    if (error.name !== 'AbortError') {
+                        this.setStatus('Ready to Scan', null);
+                        this.ui.connectBtn.disabled = false;
+                    }
+                }
+            }
+
+            handleAdvertisement(device) {
+                const advData = device.advertisementData;
+
+                // Parse manufacturer specific data
+                if (advData && advData.manufacturerData) {
+                    for (const [companyId, data] of advData.manufacturerData.entries()) {
+                        this.parseManufacturerData(companyId, data, device);
+                    }
+                }
+
+                // Parse service data
+                if (advData && advData.serviceData) {
+                    for (const [uuid, data] of advData.serviceData.entries()) {
+                        this.parseServiceData(uuid, data, device);
+                    }
+                }
+
+                this.renderDevices();
+            }
+
+            parseManufacturerData(companyId, data, device) {
+                // Xiaomi uses company ID 0x04C4 (1236) or 0x0157 (343)
+                if (companyId === 0x04C4 || companyId === 0x1236 || companyId === 0x0157) {
+                    this.log(`Manufacturer data from ${device.id?.substring(0, 8)}...: ${this.hexEncode(data)}`, 'info');
+
+                    // Parse Xiaomi BLE packet format
+                    const frameFlag = data.readUint8(0);
+                    const tempHumpres = data.readUint16LE(1);
+                    const batteryLevel = data.readUint8(3);
+
+                    if (frameFlag === 0x10 || frameFlag === 0x04) {
+                        // Temperature and humidity
+                        const temperature = tempHumpres / 10;
+                        const humidity = (tempHumpres >> 16) / 10;
+
+                        this.addOrUpdateDevice(device, {
+                            name: device.name || 'Xiaomi Sensor',
+                            address: device.id?.substring(0, 8) || 'Unknown',
+                            temperature,
+                            humidity,
+                            battery: batteryLevel,
+                            rssi: device.rssi
+                        });
+                    }
+                }
+            }
+
+            parseServiceData(uuid, data, device) {
+                this.log(`Service data for ${uuid}: ${this.hexEncode(data)}`, 'info');
+
+                if (data.byteLength >= 5) {
+                    try {
+                        // Parse the service data packet
+                        const frameInfo = data.readUint8(0);
+                        const tempRaw = data.readUint16LE(1);
+                        const humidityRaw = data.readUint16LE(3);
+                        const battery = data.readUint8(5);
+
+                        const temperature = (tempRaw & 0x0FFF) / 10;
+                        const humidity = ((tempRaw >> 12) | (humidityRaw << 4)) / 10;
+
+                        this.addOrUpdateDevice(device, {
+                            name: device.name || 'Xiaomi Sensor',
+                            address: device.id?.substring(0, 8) || 'Unknown',
+                            temperature,
+                            humidity,
+                            battery: Math.min(battery, 100),
+                            rssi: device.rssi
+                        });
+                    } catch (e) {
+                        this.log(`Error parsing service data: ${e.message}`, 'error');
+                    }
+                }
+            }
+
+            addOrUpdateDevice(device, data) {
+                const id = device.id || data.address;
+
+                if (!this.devices.has(id)) {
+                    this.devices.set(id, {
+                        ...data,
+                        lastSeen: new Date()
+                    });
+                    this.log(`New device detected: ${data.name} (${data.address})`, 'success');
+                } else {
+                    const existing = this.devices.get(id);
+                    this.devices.set(id, {
+                        ...existing,
+                        ...data,
+                        lastSeen: new Date()
+                    });
+                }
+
+                // Update RSSI if available
+                if (device.rssi !== undefined) {
+                    this.devices.get(id).rssi = device.rssi;
+                }
+            }
+
+            hexEncode(data) {
+                if (!data) return '';
+                const bytes = new Uint8Array(data);
+                return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+            }
+
+            renderDevices() {
+                const devices = Array.from(this.devices.values());
+
+                if (devices.length === 0) {
+                    this.ui.devicesList.innerHTML = `
+                        <div class="no-devices">
+                            <p>No Xiaomi sensors detected yet.<br>
+                            Make sure your sensor is powered on and within range.<br>
+                            Sensors broadcast advertisements continuously.</p>
+                        </div>`;
+                    return;
+                }
+
+                this.ui.devicesSection.style.display = 'block';
+                this.ui.connectBtn.textContent = 'Scanning...';
+
+                this.ui.devicesList.innerHTML = devices.map(device => this.createDeviceCard(device)).join('');
+            }
+
+            createDeviceCard(device) {
+                const batteryPercent = device.battery || 0;
+                const batteryColor = this.getBatteryColor(batteryPercent);
+
+                return `
+                    <div class="device-card" data-id="${device.address}">
+                        <div class="device-header">
+                            <span class="device-name">${this.escapeHtml(device.name)}</span>
+                            <span class="device-rssi">Signal: ${device.rssi !== undefined ? device.rssi + ' dBm' : 'N/A'}</span>
+                        </div>
+
+                        <div class="readings-grid">
+                            <div class="reading-item">
+                                <div class="reading-label">Temperature</div>
+                                <div class="reading-value">${(device.temperature || 0).toFixed(1)}<span class="reading-unit">°C</span></div>
+                            </div>
+
+                            <div class="reading-item">
+                                <div class="reading-label">Humidity</div>
+                                <div class="reading-value">${(device.humidity || 0).toFixed(1)}<span class="reading-unit">%</span></div>
+                            </div>
+                        </div>
+
+                        <div class="battery-bar">
+                            <div class="battery-icon">
+                                <div class="battery-fill" style="width: ${batteryPercent}%; background-color: ${batteryColor};"></div>
+                            </div>
+                            <span class="battery-value">${batteryPercent}% Battery</span>
+                            <span class="device-rssi" style="margin-left: auto;">Last: ${this.getTimeAgo(device.lastSeen)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getBatteryColor(percent) {
+                if (percent >= 80) return '#2ecc71';
+                if (percent >= 40) return '#f39c12';
+                return '#e74c5c';
+            }
+
+            getTimeAgo(date) {
+                if (!date) return 'Unknown';
+                const seconds = Math.floor((new Date() - date) / 1000);
+
+                if (seconds < 60) return `${seconds}s ago`;
+                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+                return `${Math.floor(seconds / 3600)}h ago`;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // Add Uint8Array helper methods if not available
+        if (!Uint8Array.prototype.readUint8) {
+            Uint8Array.prototype.readUint8 = function(offset) {
+                return this[offset];
+            };
+
+            Uint8Array.prototype.readUint16LE = function(offset) {
+                return this[offset] | (this[offset + 1] << 8);
+            };
+        }
+
+        // Initialize app
+        const app = new XiaomiThermometerApp();
+
+        // Log browser info
+        if ('bluetooth' in navigator) {
+            app.log('Web Bluetooth API available', 'success');
+        } else {
+            app.log('Web Bluetooth API not found', 'warning');
+        }
+    </script>
+</body>
+</html>

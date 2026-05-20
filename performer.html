@@ -6,6 +6,11 @@
         <title>Setlist Manager</title>
         <link rel="manifest" href="manifest.json" />
         <style>
+            body { ... }
+            #status { ... }
+            #webRTCButton { ... }
+        </style>
+        <style>
             :root {
                 --bg: #0f1117;
                 --surface: #1a1d27;
@@ -901,7 +906,11 @@
             </div>
 
             <div class="sidebar-footer">
-                <div id="offlineIndicator" class="offline-indicator" style="display:none">
+                <div
+                    id="offlineIndicator"
+                    class="offline-indicator"
+                    style="display: none"
+                >
                     <span>Offline</span>
                 </div>
                 <div style="display: flex; gap: 8px">
@@ -930,6 +939,8 @@
                     onchange="importData(this)"
                 />
             </div>
+            <button id="webRTCButton">Start WebRTC Session</button>
+            <div id="status">Ready to connect</div>
         </aside>
 
         <main class="main" id="app"></main>
@@ -1011,6 +1022,31 @@
                             +
                         </button>
                         <span id="viewerSpeedLabel">×1</span>
+                    </div>
+                    <div class="viewer-control-group">
+                        <span>Zoom</span>
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="adjustZoom(-0.1)"
+                        >
+                            −
+                        </button>
+                        <input
+                            type="number"
+                            id="viewerZoom"
+                            value="1"
+                            min="0.2"
+                            max="3"
+                            step="0.1"
+                            onchange="setZoom(this.value)"
+                        />
+                        <button
+                            class="btn btn-ghost btn-sm"
+                            onclick="adjustZoom(0.1)"
+                        >
+                            +
+                        </button>
+                        <span id="viewerZoomLabel">x1</span>
                     </div>
                 </div>
                 <span class="viewer-song-name" id="viewerSongName"></span>
@@ -1558,6 +1594,8 @@
                     } else if (
                         isImage(song.fileType) ||
                         song.fileType === "application/pdf" ||
+                        song.fileType ===
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
                         song.fileType.startsWith("text/")
                     ) {
                         openDocumentViewer(song);
@@ -1670,6 +1708,22 @@
                     "×" + num;
             }
 
+            function adjustZoom(delta) {
+                const input = document.getElementById("viewerZoom");
+                let val = parseFloat(input.value) + delta;
+                input.value = Math.floor(val * 10) / 10;
+                setZoom(val);
+                document.getElementById("viewerZoomLabel").textContent =
+                    "×" + input.value;
+            }
+            function setZoom(val) {
+                const content = document.getElementById("viewerContent");
+                content.style.zoom = val;
+                document.getElementById("viewerZoom").value = val;
+                document.getElementById("viewerZoomLabel").textContent =
+                    "×" + val;
+            }
+
             function closeViewer() {
                 stopScroll();
                 document
@@ -1702,6 +1756,43 @@
                     script.onerror = reject;
                     document.head.appendChild(script);
                 });
+            }
+
+            async function renderDocxToHtml(blob, container) {
+                options = {
+                    styleMap: [
+                        "p[style-name='Heading 1'] => h1:fresh",
+                        "p => p:fresh > pre:fresh",
+                    ],
+                };
+                mammoth
+                    .convertToHtml(
+                        { arrayBuffer: await blob.arrayBuffer() },
+                        options,
+                    )
+                    //.extractRawText({ arrayBuffer: await blob.arrayBuffer() })
+                    .then(displayResult, function (error) {
+                        console.error(error);
+                    });
+
+                function displayResult(result) {
+                    container.innerHTML = result.value;
+
+                    var messageHtml = result.messages
+                        .map(function (message) {
+                            return (
+                                '<li class="' +
+                                message.type +
+                                '">' +
+                                message.message +
+                                "</li>"
+                            );
+                        })
+                        .join("");
+                    if (messageHtml) console.log(messageHtml);
+                    // document.getElementById("messages").innerHTML =
+                    //     "<ul>" + messageHtml + "</ul>";
+                }
             }
 
             async function renderPdfToCanvases(blob, container) {
@@ -1747,6 +1838,11 @@
                     content.appendChild(img);
                 } else if (song.fileType === "application/pdf") {
                     await renderPdfToCanvases(song.fileData, content);
+                } else if (
+                    song.fileType ===
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                ) {
+                    await renderDocxToHtml(song.fileData, content);
                 } else if (song.fileType.startsWith("text/")) {
                     const text = await song.fileData.text();
                     const pre = document.createElement("pre");
@@ -2301,7 +2397,10 @@
             // Transaction-based delete functions for atomic operations
             async function deleteSong(id) {
                 return new Promise((resolve, reject) => {
-                    const transaction = dbInstance.transaction(["songs", "sets"], "readwrite");
+                    const transaction = dbInstance.transaction(
+                        ["songs", "sets"],
+                        "readwrite",
+                    );
                     const songsStore = transaction.objectStore("songs");
                     const setsStore = transaction.objectStore("sets");
 
@@ -2319,7 +2418,9 @@
 
                             for (const set of sets) {
                                 if (set.songIds && set.songIds.includes(id)) {
-                                    set.songIds = set.songIds.filter((sid) => sid !== id);
+                                    set.songIds = set.songIds.filter(
+                                        (sid) => sid !== id,
+                                    );
                                     setUpdates.push(setsStore.put(set));
                                 }
                             }
@@ -2327,21 +2428,26 @@
                             // If no sets need updating, complete immediately
                             if (setUpdates.length === 0) {
                                 transaction.oncomplete = () => resolve();
-                                transaction.onerror = () => reject(new Error("Transaction failed"));
+                                transaction.onerror = () =>
+                                    reject(new Error("Transaction failed"));
                                 return;
                             }
 
                             // Wait for all set updates to complete
-                            const updatePromises = setUpdates.map(req => new Promise((res, rej) => {
-                                req.onsuccess = () => res();
-                                req.onerror = () => rej(new Error("Set update failed"));
-                            }));
+                            const updatePromises = setUpdates.map(
+                                (req) =>
+                                    new Promise((res, rej) => {
+                                        req.onsuccess = () => res();
+                                        req.onerror = () =>
+                                            rej(new Error("Set update failed"));
+                                    }),
+                            );
 
                             Promise.all(updatePromises)
                                 .then(() => {
                                     transaction.oncomplete = () => resolve();
                                 })
-                                .catch(err => {
+                                .catch((err) => {
                                     transaction.onerror = () => reject(err);
                                 });
                         };
@@ -2360,9 +2466,13 @@
 
             async function deleteSet(id) {
                 return new Promise((resolve, reject) => {
-                    const transaction = dbInstance.transaction(["sets", "performances"], "readwrite");
+                    const transaction = dbInstance.transaction(
+                        ["sets", "performances"],
+                        "readwrite",
+                    );
                     const setsStore = transaction.objectStore("sets");
-                    const performancesStore = transaction.objectStore("performances");
+                    const performancesStore =
+                        transaction.objectStore("performances");
 
                     // Delete the set first
                     const deleteSetRequest = setsStore.delete(id);
@@ -2378,29 +2488,42 @@
 
                             for (const perf of perfs) {
                                 if (perf.setIds && perf.setIds.includes(id)) {
-                                    perf.setIds = perf.setIds.filter((sid) => sid !== id);
-                                    perfUpdates.push(performancesStore.put(perf));
+                                    perf.setIds = perf.setIds.filter(
+                                        (sid) => sid !== id,
+                                    );
+                                    perfUpdates.push(
+                                        performancesStore.put(perf),
+                                    );
                                 }
                             }
 
                             // If no performances need updating, complete immediately
                             if (perfUpdates.length === 0) {
                                 transaction.oncomplete = () => resolve();
-                                transaction.onerror = () => reject(new Error("Transaction failed"));
+                                transaction.onerror = () =>
+                                    reject(new Error("Transaction failed"));
                                 return;
                             }
 
                             // Wait for all performance updates to complete
-                            const updatePromises = perfUpdates.map(req => new Promise((res, rej) => {
-                                req.onsuccess = () => res();
-                                req.onerror = () => rej(new Error("Performance update failed"));
-                            }));
+                            const updatePromises = perfUpdates.map(
+                                (req) =>
+                                    new Promise((res, rej) => {
+                                        req.onsuccess = () => res();
+                                        req.onerror = () =>
+                                            rej(
+                                                new Error(
+                                                    "Performance update failed",
+                                                ),
+                                            );
+                                    }),
+                            );
 
                             Promise.all(updatePromises)
                                 .then(() => {
                                     transaction.oncomplete = () => resolve();
                                 })
-                                .catch(err => {
+                                .catch((err) => {
                                     transaction.onerror = () => reject(err);
                                 });
                         };
@@ -2560,13 +2683,13 @@
 
                 // Get existing IDs to skip duplicates
                 const existingSongs = new Set(
-                    (await getAll("songs")).map((s) => s.id)
+                    (await getAll("songs")).map((s) => s.id),
                 );
                 const existingSets = new Set(
-                    (await getAll("sets")).map((s) => s.id)
+                    (await getAll("sets")).map((s) => s.id),
                 );
                 const existingPerfs = new Set(
-                    (await getAll("performances")).map((p) => p.id)
+                    (await getAll("performances")).map((p) => p.id),
                 );
 
                 let imported = 0;
@@ -2591,7 +2714,9 @@
 
                 closeModal();
                 await render();
-                toast(`Imported ${imported} new item${imported !== 1 ? "s" : ""}`);
+                toast(
+                    `Imported ${imported} new item${imported !== 1 ? "s" : ""}`,
+                );
             }
 
             // ── Keyboard & Init ──
@@ -2624,7 +2749,9 @@
                                     newWorker.state === "activated" &&
                                     navigator.serviceWorker.controller
                                 ) {
-                                    toast("Updated — reload for latest version");
+                                    toast(
+                                        "Updated — reload for latest version",
+                                    );
                                 }
                             });
                         });
@@ -2634,7 +2761,9 @@
                 // Online/offline status
                 const offlineEl = document.getElementById("offlineIndicator");
                 function updateOfflineIndicator() {
-                    offlineEl.style.display = navigator.onLine ? "none" : "block";
+                    offlineEl.style.display = navigator.onLine
+                        ? "none"
+                        : "block";
                 }
                 updateOfflineIndicator();
                 window.addEventListener("online", () => {
@@ -2647,5 +2776,8 @@
                 });
             }
         </script>
+        <script src="adapter-latest.js"></script>
+        <script src="stages.js"></script>
+        <script src="mammoth.browser.js"></script>
     </body>
 </html>

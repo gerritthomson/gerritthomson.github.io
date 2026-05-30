@@ -1,0 +1,9 @@
+{
+"name": "webrtc-barcode-signaling",
+"version": "1.0.0",
+"description": "WebRTC application using QR codes for signaling data transfer",
+"main": "./index.html",
+"type":"module","scripts":{"start":"echo Open index.html in a browser"},
+    },"keywords":["webrtc","qr-code","barcode-signaling"],
+  "author":"","license":""
+}

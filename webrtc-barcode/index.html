@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Barcode Signaling</title>
+<!-- Load libraries via CDN -->
+<!-- html5-qrcode for scanning QR codes (Scanner functionality) -->
+<script src="https://unpkg.com/html5-qrcode@2.x/html5-qrcode.min.js"></script><!-- Simple-Peer for WebRTC abstraction (optional, but used in utils) --><!-- Note: simple-peer is optional; we're using native RTCPeerConnection directly for simplicity. You can remove this if not needed. -->
+    <link rel="stylesheet" href="./style.css"/>
+</head>
+<body>
+<div class="container">
+<h1>Publisher (Show QR Code)</h1>
+<div id="pubStatus">Waiting to start...</div><br/>
+<button id="startScanBtn" class="btn btn-primary" onclick='startPublisher()'>Start Broadcasting Offer (Show QR)</button><br/><br/>
+
+        <!-- Display the generated QR code here -->
+        <div id="qr-display-area"></div>
+</div>
+<div style="padding-top: 5rem;">
+    <h2>Scanner (Read Barcode to Connect)</h2>
+    <p id="scanStatus">Waiting for barcode...</p><br/>
+<button class='btn btn-secondary' onclick='startScanner()'>Start Scanning</button><br/><br/>
+
+<!-- Scanner container -->
+<div id="qrcode-reader-container"></div></div>
+<script src="./publisher.js"></script>
+<script src="./scanner.js"></script></body></html>

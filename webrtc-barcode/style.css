@@ -1,0 +1,32 @@
+/* Publisher & Scanner Styles */
+
+* {
+box-sizing:border-box;
+}
+body{
+font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f5f6fa;color:#333;margin:0;padding:20px;line-height:1.6;      }
+.container{
+max-width:900px;margin:auto;padding-top:-5em
+
+}
+h1 {
+font-size:28px;font-weight:bold;color:#fff;text-align:center;padding-bottom:.75rem;
+    h3{
+font-size:24px;font-weight:bold;color:#667eea;text-align:left
+        }
+.btn-group {
+display:flex;gap:1.5rem;flex-wrap:wrap;padding-top:-3em
+
+    }
+button {
+padding:.75rem 2rem;font-size:18px;border-radius:6px;background:#fff;color:#333;border:none;cursor:pointer
+}
+.btn-primary {background:#0a9e4c}.btn-secondary{background:#ea4fc0}:hover{opacity:.9}
+.status-box {
+        background:white;padding:.5rem 1.25rem;margin:1.75rem 0;color:#333;text-align:center
+    }
+#qr-display-area, #qrcode-reader-container {
+width:86vw;height:46vh;min-width:none;background:white;border-radius:.2em
+
+        box-shadow:.5em .1rem .7rem rgba(0, 0, 0,.1)
+    }

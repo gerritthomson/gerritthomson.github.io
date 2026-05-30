@@ -33,14 +33,15 @@ window.startScanner = async function() {
  */
 function onScanSuccess(decodedText, decodedResult) {
 // Decode the SDP data from the QR code content
+  statusEl.textContent = decodedText;
   try {
       const sdpData = decodeSDP(decodedText);
-          statusEl.textContent = "Connected!";
+          statusEl.textContent = "Creating peer connection!" + sdpData;
               // Create peer connection with the received offer (or answer if needed).
               createPeerConnection(sdpData, true);
   } catch(e) {
       console.error("QR decode error:", e);
-      statusEl.textContent = "Decode failed. Check data.";
+      statusEl.textContent += "Decode failed. Check data." + e;
   };
 };
 
@@ -62,24 +63,25 @@ function createPeerConnection(remoteSdp, isAnswerer) {
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
         constraints: { optional: [{ googLeakyHeapCheck:true }] },
     });
-// Set up ICE candidate listeners
-pc.onicecandidate = event => {
-};
+  // Set up ICE candidate listeners
+  pc.onicecandidate = event => {
+  };
 
-if(isAnswerer) {
-    // Answerer logic - set remote description with the offer from QR code
-    pc.setRemoteDescription(new window.RTCPeerConnection.RemoteDescription({
-        type: 'offer',
-        sdp: JSON.parse(atob(remoteSdp))
-})).then(() => {
-            // Generate answer (requires waiting for ICE candidates or timeout)
-            const answer = pc.createAnswer();
-                return pc.setLocalDescription(answer);
-    });
-} else {
-// Publisher logic - already sent the offer via QR code
-    console.log("Publisher: Connection ready, awaiting incoming call.");
-}
+  if (isAnswerer) {
+    statusEl.textContent += 'is answer ! ';
+      // Answerer logic - set remote description with the offer from QR code
+      pc.setRemoteDescription(remoteSdp).then(() => {
+              // Generate answer (requires waiting for ICE candidates or timeout)
+              statusEl.textContent += ' waiting on ice ! ';
+              const answer = pc.createAnswer();
+              statusEl.textContent += ' got answer ! ' + answer;
+                  return pc.setLocalDescription(answer);
+      });
+  } else {
+    statusEl.textContent += 'not an answer';
+  // Publisher logic - already sent the offer via QR code
+      console.log("Publisher: Connection ready, awaiting incoming call.");
+  }
 };
 
 /**
@@ -92,12 +94,14 @@ function decodeSDP(encodedSdp) {
         // Check for prefix (we use "offer:" or "answer:" prefixes to distinguish in QR code content)
         const isBase64 = encodedSdp.startsWith("offer:");
         let sdpData;
-            if(isBase64){
+      if (isBase64) {
+        statusEl.textContent += '[ is offer !]';
                 sdpData = atob(encodedSdp.replace(/^offer:/, '')); // Remove prefix & decode base64
-            } else {
+      } else {
+        statusEl.textContent += '[ is note offer ]';
                 // Try parsing JSON directly
                 try {
-                    const json = JSON.parse(encodedSdp);
+                    const json = JSON.parse(atob(encodedSdp));
                     return (json && typeof json === 'object') ? window.RTCPeerConnection.localDescription : null;
                 } catch(e) {}
             }

@@ -44,7 +44,7 @@ if (event.candidate) {
     return new Promise((resolve) => {
         setTimeout(() => {
             if (peerConnection.localDescription.type === 'offer') {
-                offerSDP = btoa(JSON.stringify(peerConnection.localDescription)); // Base64 encode for QR safety
+                offerSDP = "offer:"+btoa(JSON.stringify(peerConnection.localDescription)); // Base64 encode for QR safety
                 console.log("Offer SDP generated:", offerSDP.substring(0, 50), "...");
                 resolve(offerSDP);
             } else {
@@ -74,7 +74,7 @@ document.getElementById('startScanBtn').disabled = true;
 
 createOffer(stream).then(sdp => {
   showQRCode(sdp);
-    pubStatus.textContent = `Offer Ready! QR Code displayed.`;
+    pubStatus.textContent = `Offer Ready! QR Code displayed.` + sdp;
         }).catch(err => {
             console.error("Error creating offer:", err);
             pubStatus.textContent = 'Error generating offer. Check console.';

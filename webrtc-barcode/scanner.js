@@ -13,14 +13,16 @@ window.startScanner = async function() {
     const qrContainer = document.createElement('div');
     qrContainer.id = 'qrcode-reader-container';
 // Initialize Html5Qrcode (or use CDN version)
-html5QrcodeScanner = new Html5Qrcode("qrcode-reader-container");
-  html5QrcodeScanner.start({
-    facingMode: "environment"
-  },
-            { fps: 10,
-            width: 640,
-            height: 480
-    }, onScanSuccess, onScanFailure).catch(err => {
+  html5QrcodeScanner = new Html5QrcodeScanner("qrcode-reader-container",
+
+    {
+      fps: 10,
+      qrbox: {
+        width: 640,
+        height: 480
+      }
+    }, false );
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure).catch(err => {
         console.error("Error starting scanner:", err);
         statusEl.textContent = "Scanner error. Check console."+ err;
     });
